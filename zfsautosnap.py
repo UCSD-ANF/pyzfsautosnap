@@ -4,15 +4,23 @@ import sys
 import subprocess
 import csv
 import re
+import datetime
 
 PREFIX="zfs-auto-snap"
+USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
+
+logging.basicConfig(level=logging.DEBUG)
 
 def take_snapshot(label="daily", snap_children=False, avoidscrub=False, *args):
     """ Take a snapshot of all eligable filesystems given in *args
     If *args is the special value '//', use the com.sun:auto-snapshot or the
     com.sun:auto-snapshot:#{event} property to determine which filesystems to
     snapshot"""
+
+    today = datetime.datetime.now()
+    snapdate=today.strftime('%F-%H%M')
+    logging.debug("Snapdate is: %s"% snapdate)
 
     pass
 
@@ -26,9 +34,9 @@ def narrow_recursive_filesystems(recursive_list):
     final_list=[]
     for ds in recursive_list:
         found=False
-        print "checking if %s has a parent in %s" % (ds,recursive_list)
+        logging.debug("checking if %s has a parent in %s" % (ds,recursive_list))
         for tmp in recursive_list:
-            print "comparing %s to %s" % (tmp,ds)
+            logging.debug("comparing %s to %s" % (tmp,ds))
             if re.match(tmp,ds) and tmp!=ds:
                 found=True
                 next
@@ -45,9 +53,14 @@ def get_userprop_datasets(label="daily"):
     SINGLE_LIST is a list of datasets to snapshot individually.
     """
 
+    cols=','.join(['name',
+                   USERPROP_NAME,
+                   SEP.join([USERPROP_NAME,label])
+                  ])
+
     cmd=[ 'zfs', 'list', '-H', '-t', 'filesystem,volume',
          '-s', 'name', '-o',
-         'name,com.sun:auto-snapshot,com.sun:auto-snapshot:%s'%label ]
+         cols ]
     p=subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     r=csv.reader(p.stdout, delimiter="	")
     save=[]
@@ -60,7 +73,7 @@ def get_userprop_datasets(label="daily"):
 
     errmsg=p.communicate()[1]
     rc = p.returncode
-    print "process returned result code %d" % rc
+    logging.debug("process returned result code %d" % rc)
 
     if rc > 0:
         logging.error("zfs returned code %d. Error message: \n%s" % (rc,errmsg))
@@ -72,19 +85,20 @@ def get_userprop_datasets(label="daily"):
     # find recursive snapshot sets
     for row in save:
         ds=row[0]
-        print "checking ",ds
+        logging.debug("checking %s" % ds)
         if can_recursive_snapshot(ds,exclude):
-            print "OK to recursive snapshot %s" % ds
+            logging.debug("OK to recursive snapshot %s" % ds)
             recursive_list.append(ds)
         elif ds not in exclude:
-                print "OK to snapshot sole dataset ", ds
+                logging.debug("OK to snapshot sole dataset %s" % ds)
                 single_list.append(ds)
         else:
-            print "NOT OK to snapshot %s" % ds
+            logging.debug("NOT OK to snapshot %s" % ds)
 
-    print "Pre-Narrowed recursive list is %s" % recursive_list
+    logging.debug("Pre-Narrowed recursive list is %s" % recursive_list)
     final_recursive_list=narrow_recursive_filesystems(recursive_list)
-    print "Final recursive list is %s" % final_recursive_list
+    logging.debug("Final recursive list is %s" % final_recursive_list)
+    return (single_list,final_recursive_list)
 
 # ---------------- MAIN ---------------
 if __name__ == "__main__":
@@ -96,5 +110,7 @@ if __name__ == "__main__":
     except (subprocess.CalledProcessError) as e:
         logging.error("The ZFS executable failed")
         exit()
+
+    take_snapshot()
 
 
