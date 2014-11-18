@@ -5,12 +5,14 @@ import subprocess
 import csv
 import re
 import datetime
+from zfs import *
+from zfs.util import zfs_list
+
+logging.basicConfig(level=logging.DEBUG)
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
-
-logging.basicConfig(level=logging.DEBUG)
 
 def take_snapshot(label="daily", snap_children=False, avoidscrub=False, *args):
     """ Take a snapshot of all eligable filesystems given in *args
@@ -25,8 +27,15 @@ def take_snapshot(label="daily", snap_children=False, avoidscrub=False, *args):
     pass
 
 def can_recursive_snapshot(ds, excludes):
+    """ Given a list of datasets to exclude, check if the dataset named ds
+    has a child filesystem that is in the exclude list. If so, ds cannot be
+    recursively snapshotted. """
+    sds=ds.split('/')
     for exc in excludes:
-        if re.match(ds,exc):
+        sexc=exc.split('/')
+        if len(sds) > len(sexc):
+            next
+        if sds == sexc[:len(sds)]:
             return False
     return True
 
@@ -40,9 +49,9 @@ def narrow_recursive_filesystems(recursive_list):
             if re.match(tmp,ds) and tmp!=ds:
                 found=True
                 next
-        if found==False:
-            final_list.append(ds)
-    return final_list
+                if found==False:
+                    final_list.append(ds)
+                    return final_list
 
 
 def get_userprop_datasets(label="daily"):
@@ -90,8 +99,8 @@ def get_userprop_datasets(label="daily"):
             logging.debug("OK to recursive snapshot %s" % ds)
             recursive_list.append(ds)
         elif ds not in exclude:
-                logging.debug("OK to snapshot sole dataset %s" % ds)
-                single_list.append(ds)
+            logging.debug("OK to snapshot sole dataset %s" % ds)
+            single_list.append(ds)
         else:
             logging.debug("NOT OK to snapshot %s" % ds)
 
