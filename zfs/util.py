@@ -5,7 +5,7 @@ import re
 import datetime
 import csv
 from cStringIO import StringIO
-from . import ZfsError, ZfsNoDatasetError
+from . import ZfsError, ZfsNoDatasetError, ZfsPermissionError
 
 #logging.basicConfig(level=logging.DEBUG)
 
@@ -39,7 +39,9 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
     logging.debug('process returned result code %d' % rc)
 
     if rc > 0:
-        if "dataset does not exist" in err:
+        if err == "Unable to open /dev/zfs: Permission denied.\n":
+            raise ZfsPermissionError(err)
+        elif "dataset does not exist" in err:
             raise ZfsNoDatasetError(err)
         else:
             raise subprocess.CalledProcessError(rc, cmd)

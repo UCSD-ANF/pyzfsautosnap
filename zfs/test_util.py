@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, CalledProcessError
 import util
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
-from . import ZfsError, ZfsNoDatasetError
+from . import ZfsError, ZfsNoDatasetError, ZfsPermissionError
 
 class Test:
     """
@@ -37,6 +37,17 @@ tank/snaprecurse/child1	30K	3.56T	30K	/tank/snaprecurse/child1
 tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 '''
     mockedoutnoargstank="tank	3.91G	3.56T	3.91G	/tank\n"
+
+    @raises(ZfsPermissionError)
+    def test_zfs_list_with_bad_permission(self):
+        fake_p=flexmock(
+            communicate=lambda: (
+                '',
+                'Unable to open /dev/zfs: Permission denied.\n'),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').and_return(fake_p)
+        r = util.zfs_list()
 
     def test_zfs_list_with_sort_and_properties(self):
         """
