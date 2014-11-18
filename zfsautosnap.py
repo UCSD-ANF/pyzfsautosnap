@@ -8,7 +8,6 @@ import datetime
 from zfs import *
 from zfs.util import zfs_list
 
-logging.basicConfig(level=logging.DEBUG)
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
@@ -111,6 +110,7 @@ def get_userprop_datasets(label="daily"):
 
 # ---------------- MAIN ---------------
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     try:
         get_userprop_datasets(label="daily")
     except (OSError) as e:
