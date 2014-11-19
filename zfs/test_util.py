@@ -134,9 +134,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 
 
     @raises(ZfsNoDatasetError)
-    def test_zfs_list_with_nonexistant_ds(self):
+    def test_zfs_list_with_nonexistent_ds(self):
         """
-        test zfs_list with a non-existant dataset
+        test zfs_list with a non-existent dataset
         """
         fake_p=flexmock(
             communicate=lambda: (
@@ -151,9 +151,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         r = util.zfs_list(ds='failboat')
 
     @raises(ZfsNoPoolError)
-    def test_zpool_status_with_nonexistant_pool(self):
+    def test_zpool_status_with_nonexistent_pool(self):
         """
-        test zpool_status with a nonexistant pool name
+        test zpool_status with a non existent pool name
         """
         fake_p=flexmock(
             communicate=lambda: (
