@@ -1,10 +1,11 @@
 from zfs import *
-from zfs.util import zfs_list
+import zfs.util
 import zfsautosnap
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
 
 testexcludes=['tank/nodaily','tank/snapnorecurse','chile/rt']
+testreaderoutput=[['tank', '-', '-'], ['tank/crap with spaces', '-', '-']]
 
 def test_can_recursive_snapshot():
     # Parent of an excluded ds should be false
@@ -35,3 +36,15 @@ def test_can_recursive_snapshot():
     # but maybe it should raise an error?
     r = zfsautosnap.can_recursive_snapshot('tank/nodaily',testexcludes)
     assert_equal(r,False)
+
+def test_get_userprop_datasets():
+    # with no args (uses label == "daily")
+    myzfsautosnap=flexmock(zfsautosnap)
+    myzfsautosnap.should_receive('zfs_list').with_args(
+        sort='name',
+        properties=['name',
+                    zfsautosnap.USERPROP_NAME,
+                    zfsautosnap.SEP.join([zfsautosnap.USERPROP_NAME,'daily'])]
+    ).and_return(iter(testreaderoutput))
+    r = myzfsautosnap.get_userprop_datasets()
+    assert r

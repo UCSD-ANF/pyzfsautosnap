@@ -61,16 +61,11 @@ def get_userprop_datasets(label="daily"):
     SINGLE_LIST is a list of datasets to snapshot individually.
     """
 
-    cols=','.join(['name',
-                   USERPROP_NAME,
-                   SEP.join([USERPROP_NAME,label])
-                  ])
+    props=['name',
+           USERPROP_NAME,
+           SEP.join([USERPROP_NAME,label]) ]
 
-    cmd=[ 'zfs', 'list', '-H', '-t', 'filesystem,volume',
-         '-s', 'name', '-o',
-         cols ]
-    p=subprocess.Popen( cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    r=csv.reader(p.stdout, delimiter="	")
+    r=zfs_list(sort='name', properties=props)
     save=[]
     exclude=[]
     for row in r:
@@ -78,14 +73,6 @@ def get_userprop_datasets(label="daily"):
         if row[2] == 'false' or (row[1] == 'false' and row[2] == '-') or \
            (row[1] == '-' and row[2] == '-'):
             exclude.append(row[0])
-
-    errmsg=p.communicate()[1]
-    rc = p.returncode
-    logging.debug("process returned result code %d" % rc)
-
-    if rc > 0:
-        logging.error("zfs returned code %d. Error message: \n%s" % (rc,errmsg))
-        raise subprocess.CalledProcessError(rc, cmd)
 
     recursive_list=[]
     single_list=[]
