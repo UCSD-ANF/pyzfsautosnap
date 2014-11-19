@@ -4,5 +4,7 @@ class ZfsError(Exception):
 class ZfsNoDatasetError(ZfsError):
     pass
 
+class ZfsNoPoolError(ZfsError): pass
+
 class ZfsPermissionError(ZfsError):
     pass

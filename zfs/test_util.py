@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE, CalledProcessError
 import util
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
-from . import ZfsError, ZfsNoDatasetError, ZfsPermissionError
+from . import ZfsError, ZfsNoDatasetError, ZfsPermissionError,ZfsNoPoolError
 
 class Test:
     """
@@ -64,6 +64,7 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume','-s','name',
              '-o','name,com.sun:auto-snapshot,com.sun:auto-snapshot:daily'],
+            env=util.zfs_env,
             stdout=PIPE, stderr=PIPE).and_return( fake_p)
 
         r = util.zfs_list(sort='name', properties=[
@@ -85,6 +86,7 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume'],
+            env=util.zfs_env,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list()
         assert r
@@ -103,6 +105,7 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
+            env=util.zfs_env,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(ds='tank')
         assert r
@@ -121,6 +124,7 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
+            env=util.zfs_env,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(ds='tank',recursive=True)
         assert r
@@ -141,9 +145,27 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'failboat'],
+            env=util.zfs_env,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
         r = util.zfs_list(ds='failboat')
+
+    @raises(ZfsNoPoolError)
+    def test_zpool_status_with_nonexistant_pool(self):
+        """
+        test zpool_status with a nonexistant pool name
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', "cannot open 'failboat': no such pool\n"),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zpool', 'status', '-v', 'failboat'], env=util.zfs_env,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zpool_status(pools='failboat')
 
 
 
