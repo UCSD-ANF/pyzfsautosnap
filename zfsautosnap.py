@@ -9,6 +9,7 @@ from zfs import *
 from zfs.util import zfs_list
 
 
+logging.basicConfig(level=logging.DEBUG)
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
@@ -41,17 +42,19 @@ def can_recursive_snapshot(ds, excludes):
 def narrow_recursive_filesystems(recursive_list):
     final_list=[]
     for ds in recursive_list:
+        sds=ds.split('/')
         found=False
         logging.debug("checking if %s has a parent in %s" % (ds,recursive_list))
         for tmp in recursive_list:
             logging.debug("comparing %s to %s" % (tmp,ds))
-            if re.match(tmp,ds) and tmp!=ds:
-                found=True
-                next
-                if found==False:
-                    final_list.append(ds)
-                    return final_list
-
+            if tmp!=ds:
+                stmp=tmp.split('/')
+                if stmp == sds[:len(stmp)]:
+                    found=True
+                    next
+        if found==False:
+            final_list.append(ds)
+    return final_list
 
 def get_userprop_datasets(label="daily"):
     """ This builds two lists of datasets - RECURSIVE_LIST and SINGLE_LIST
