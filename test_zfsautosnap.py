@@ -21,6 +21,10 @@ testreaderoutput=[
 ]
 
 def test_can_recursive_snapshot():
+    """ test can_recursive snapshot
+
+    Tests multiple aspects of can_recursive_snapshot, including substrings
+    """
     # Parent of an excluded ds should be false
     r = zfsautosnap.can_recursive_snapshot('chile',testexcludes)
     assert_equal(r,False)
@@ -51,6 +55,10 @@ def test_can_recursive_snapshot():
     assert_equal(r,False)
 
 def test_narrow_recursive_filesystems():
+    """ test narrow_recursive_filesystems
+
+    should remove child paths of tank/foo, and not trip on bar
+    """
     r = zfsautosnap.narrow_recursive_filesystems([
         'tank/foo',
         'tank/foo/foo',
@@ -59,7 +67,10 @@ def test_narrow_recursive_filesystems():
     assert_equal(r,['tank/foo','tank/bar'])
 
 def test_get_userprop_datasets():
-    """ with no args (uses label == "daily") """
+    """ test get_userprop_datasets with no args
+
+    Defaults to label == "daily"
+    """
     myzfsautosnap=flexmock(zfsautosnap)
     myzfsautosnap.should_receive('zfs_list').with_args(
         sort='name',
@@ -75,7 +86,7 @@ def test_get_userprop_datasets():
     assert r[1]==recursive_list
 
 def test_get_userprop_datasets_hourly():
-    """Use label hourly
+    """test get_userprop_datasets with label hourly
 
     Note that we don't actually change the test output of the third column, so
     there isn't any change to the expected single and recursive lists"""

@@ -40,6 +40,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 
     @raises(ZfsPermissionError)
     def test_zfs_list_with_bad_permission(self):
+        """
+        Test zfs.util.zfs_list with invalid permissions for the zfs executable
+        """
         fake_p=flexmock(
             communicate=lambda: (
                 '',
@@ -73,6 +76,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         assert len(line) == 3
 
     def test_zfs_list_with_no_args(self):
+        """
+        test zfs_list with no arguments
+        """
         fake_p=flexmock(
             communicate=lambda: (self.mockedoutnoargs,self.mockederr),
             returncode=0)
@@ -87,6 +93,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         assert len(line) == 5
 
     def test_zfs_list_with_existing_ds(self):
+        """
+        test zfs_list with a dataset that exists
+        """
         fake_p=flexmock(
             communicate=lambda: (self.mockedoutnoargstank,
                                  self.mockederr),
@@ -102,6 +111,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         assert_equal(len(line), 5)
 
     def test_zfs_list_with_existing_ds_recursive(self):
+        """
+        test zfs_list with a dataset that exists and recurse
+        """
         fake_p=flexmock(
             communicate=lambda: (self.mockedoutnoargs,
                                  self.mockederr),
@@ -119,6 +131,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 
     @raises(ZfsNoDatasetError)
     def test_zfs_list_with_nonexistant_ds(self):
+        """
+        test zfs_list with a non-existant dataset
+        """
         fake_p=flexmock(
             communicate=lambda: (
                 '', "cannot open 'failboat': dataset does not exist\n"),
