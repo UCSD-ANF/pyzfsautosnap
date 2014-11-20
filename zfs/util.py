@@ -54,6 +54,11 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
 
     return r
 
+def zfs_destroy(items, recursive):
+    """Scaffold destroy function"""
+    print("SCAFFOLD: zfs_destroy would remove %s" % items)
+    pass
+
 def is_syncing(pool):
     """
     Check if the named pool is currently scrubbing or resilvering
