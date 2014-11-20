@@ -6,17 +6,18 @@ import csv
 import re
 import datetime
 from zfs import *
-from zfs.util import zfs_list
+from zfs.util import zfs_list, is_syncing
 
 
 logging.basicConfig(level=logging.DEBUG)
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
+KEEP={'hourly': 24, 'daily': 30}
 
-def take_snapshot(label="daily", snap_children=False, avoidscrub=False, *args):
-    """ Take a snapshot of all eligable filesystems given in *args
-    If *args is the special value '//', use the com.sun:auto-snapshot or the
+def take_snapshot(fsnames, label="daily", snap_children=False, avoidsync=False):
+    """ Take a snapshot of all eligable filesystems given in fsnames
+    If fsnames is the special value '//', use the com.sun:auto-snapshot or the
     com.sun:auto-snapshot:#{event} property to determine which filesystems to
     snapshot"""
 
@@ -24,7 +25,69 @@ def take_snapshot(label="daily", snap_children=False, avoidscrub=False, *args):
     snapdate=today.strftime('%F-%H%M')
     logging.debug("Snapdate is: %s"% snapdate)
 
+    # the '//' filesystem is special. We use it as a keyword to determine
+    # whether to poll the ZFS "com.sun:auto-snapshot" properties.
+    # Determine what these are, call ourselves again, then return.
+    if isinstance(fsnames, basestring) and fsnames == '//':
+        single_list,recursive_list = get_userprop_datasets(label=label)
+
+        logging.info("Taking non-recursive snapshots of: %s" %\
+                       single_list.join(', '))
+        single_state = take_snapshot(
+            single_list, label=label, snap_children=False,
+            avoidsync=avoidsync)
+
+        logging.info("Taking recursive snapshots of: %s" %\
+                       recursive_list.join(', '))
+        recursive_state = take_snapshot(
+            recursive_list, label=label, snap_children=True,
+            avoidsync=avoidsync)
+
+        return single_state + recursive_state
+
+    if avoidsync == True:
+        fsnames=filter_syncing_pools(fsnames)
+
+    for fs in fsnames:
+        # Ok, now say cheese! If we're taking recursive snapshots,
+        # walk through the children, destroying old ones if required.
+        pass
     pass
+
+def filter_syncing_pools(fsnames):
+    """ Given a list of fsnames, filter out the filesystems that are on pools
+    in the middle of a sync operating (scrub or resilver).
+
+    Sync operations would be interrupted/restarted by a snapshot.
+
+    This function attempts to cache calls to zfs.utils.is_syncing. There is a
+    risk that a scrub/resilver will be started just after this check completes,
+    and also the risk that a running scrub will complete just after this check.
+    """
+
+    poolcache={}
+    nosyncfilesys=[]
+
+    for fs in fsnames:
+        pool=fs.split('/')[0]
+        if pool == '':
+            raise ZfsBadFsName(fs)
+
+        if pool in poolcache.keys():
+            if poolcache[pool]==True:
+                sync=True
+            else:
+                sync=False
+        else:
+            sync = is_syncing(pool)
+            poolcache[pool]=sync
+
+        if sync==True:
+            logging.info("The pool containing %s is being scrubbed/resilvered." % fs)
+            logging.info("Not taking snapshots for %s." % fs)
+        else:
+            nosyncfilesys.append(fs)
+    return nosyncfilesys
 
 def can_recursive_snapshot(ds, excludes):
     """ Given a list of datasets to exclude, check if the dataset named ds

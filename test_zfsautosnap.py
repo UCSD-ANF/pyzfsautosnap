@@ -100,3 +100,22 @@ def test_get_userprop_datasets_hourly():
     r = myzfsautosnap.get_userprop_datasets(label='hourly')
     assert r
 
+def test_filter_syncing_pools():
+    """test filter_syncing_pools
+    """
+
+    myzfsautosnap=flexmock(zfsautosnap)
+    myzfsautosnap.should_receive('is_syncing').and_return(
+        False, True, False).one_by_one()
+    r = myzfsautosnap.filter_syncing_pools(['tank/foo',
+                                            'tank/bar',
+                                            'deadweight/foo',
+                                            'deadweight/bar',
+                                            'tan/deadweight'])
+    assert_equal(r, ['tank/foo','tank/bar','tan/deadweight'])
+
+@raises(ZfsBadFsName)
+def test_filter_syncing_pools_badname():
+    """ test filter_syncing_pools with an invalid fs name """
+
+    r = zfsautosnap.filter_syncing_pools(['/invalid'])

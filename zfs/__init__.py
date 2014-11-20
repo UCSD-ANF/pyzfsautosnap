@@ -8,3 +8,5 @@ class ZfsNoPoolError(ZfsError): pass
 
 class ZfsPermissionError(ZfsError):
     pass
+
+class ZfsBadFsName(ZfsError): pass
