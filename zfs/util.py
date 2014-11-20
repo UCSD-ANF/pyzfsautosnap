@@ -117,6 +117,42 @@ def _check_perm_err(errstring):
     if errstring == ZFS_ERROR_STRINGS['permerr']:
         raise ZfsPermissionError(errno.EPERM, errstring, '/dev/zfs')
 
+def zfs_snapshot(filesys, snapname, recursive=False):
+    """Snapshot a ZFS filesystem
+    """
+    cmd = ['zfs', 'snapshot']
+
+    if recursive==True:
+        cmd.append('-r')
+
+    if not isinstance(filesys,basestring):
+        raise ZfsArgumentError(
+            'not sure how to handle filesys with %s' % type(filesys))
+    if not isinstance(snapname,basestring):
+        raise ZfsArgumentError(
+            'not sure how to handle snapname with %s' % type(snapname))
+
+    fullsnapname="%s@%s" % (filesys, snapname)
+    cmd.append(fullsnapname)
+
+    p=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                       env=ZFS_ENV)
+    out,err=p.communicate()
+    rc=p.returncode
+    logging.debug('process returned result code %d' % rc)
+
+    if rc > 0:
+        _check_perm_err(err)
+        if 'dataset already exists' in err:
+            raise ZfsDatasetExistsError(errno.EEXIST, err, fullsnapname)
+        elif 'dataset does not exist' in err:
+            raise ZfsNoDatasetError(errno.ENOENT, err, filesys)
+        elif 'permission denied' in err:
+            raise ZfsPermissionError(errno.EPERM, err, filesys)
+        else:
+            raise subprocess.CalledProcessError(rc, cmd)
+    pass
+
 def is_syncing(pool):
     """Check if the named pool is currently scrubbing or resilvering
     """

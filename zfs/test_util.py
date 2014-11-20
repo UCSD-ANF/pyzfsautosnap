@@ -322,6 +322,69 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 
         r = util.zfs_destroy('tank@foo')
 
+    @raises(ZfsNoDatasetError)
+    def test_zfs_snapshot_filesys_no_exist(self):
+        """ test zfs_snapshot when the specified filesystem doesn't exist
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', """cannot open 'tank': dataset does not exist
+usage:
+	snapshot|snap [-r] [-o property=value] ... <filesystem@snapname|volume@snapname> ...
+
+For the property list, run: zfs set|get
+
+For the delegated permission list, run: zfs allow|unallow
+"""
+            ),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'snapshot', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_snapshot('tank', 'foo')
+
+    @raises(ZfsDatasetExistsError)
+    def test_zfs_snapshot_already_exists(self):
+        """ test zfs_snapshot when the specified snapshot already exists
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', "cannot create snapshot 'tank@exists': dataset already exists\n"),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'snapshot', 'tank@exists'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_snapshot('tank', 'exists')
+
+    def test_zfs_snapshot(self):
+        """test zfs_snapshot of a new snapshot"""
+        fake_p=flexmock(
+            communicate = lambda: ('',''),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'snapshot', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_snapshot('tank', 'foo')
+        assert_equal(r, None)
+
+        # Now, with the recursive flag
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'snapshot', '-r', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_snapshot('tank', 'foo', True)
+        assert_equal(r, None)
+
 
 
 if __name__ == '__main__':
