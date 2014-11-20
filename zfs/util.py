@@ -54,6 +54,15 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
 
     return r
 
+def is_syncing(pool):
+    """
+    Check if the named pool is currently scrubbing or resilvering
+    """
+    s = zpool_status(pool)
+    if " in progress" in s:
+        return True
+    return False
+
 def zpool_status(pools=None):
     cmd=[ 'zpool', 'status', '-v' ]
 
