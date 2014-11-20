@@ -167,6 +167,40 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 
         r = util.zpool_status(pools='failboat')
 
+    def test_zpool_status_with_existing_pool(self):
+        """
+        test zpool_status with an existing pool name
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                'fake it till you make it',''),
+            returncode=0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zpool', 'status', '-v', 'pool1'], env=util.zfs_env,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zpool_status(pools='pool1')
+        assert r
+
+    def test_zpool_status_with_existing_pools(self):
+        """
+        test zpool_status with multiple existing pool names
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                'dummy',''),
+            returncode=0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zpool', 'status', '-v', 'pool1', 'pool2'], env=util.zfs_env,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zpool_status(pools=['pool1','pool2'])
+        assert r
+
 
 
 if __name__ == '__main__':
