@@ -6,7 +6,7 @@ import csv
 import re
 import datetime
 from zfs import *
-from zfs.util import zfs_list, is_syncing
+from zfs.util import zfs_list, is_syncing, zfs_destroy
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -53,6 +53,39 @@ def take_snapshot(fsnames, label="daily", snap_children=False, avoidsync=False):
         # walk through the children, destroying old ones if required.
         pass
     pass
+
+def destroy_older_snapshots(filesys, keep, label, recursive=False):
+    """Destroy old snapshots, keep newest around.
+
+    Given a filesystem name, and a limit of the number of snapshots we want,
+    along with the identifier for this set of snapshots, we destroy all older
+    snapshots of this filesystem whose names being with the text PREFIX:LABEL.
+
+    Note that unlike the original ksh function, we actually keep around the
+    requested number of snapshots, rather than "keep - 1".
+
+    Returns the number of snapshots removed.
+    """
+
+    if keep == 'all':
+        return 0
+
+    snappre="%s@%s_%s-" % (filesys, PREFIX, label)
+    r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
+                 ds=filesys)
+
+    rs = [x for x in r if x[:len(snappre)] == snappre]
+
+    removed=0
+    for snapshot in rs[keep:]:
+        try:
+            zfs_destroy(snapshot, recursive=recursive)
+        except ZfsError as e:
+            logger.warning('Unable to destroy %s' % snapshot)
+        else:
+            removed+=1
+
+    return removed
 
 def filter_syncing_pools(fsnames):
     """ Given a list of fsnames, filter out the filesystems that are on pools
