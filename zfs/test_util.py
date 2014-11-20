@@ -5,7 +5,8 @@ from subprocess import Popen, PIPE, CalledProcessError
 import util
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
-from . import ZfsError, ZfsNoDatasetError, ZfsPermissionError,ZfsNoPoolError
+from . import *
+import StringIO
 
 class Test:
     """
@@ -44,10 +45,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         Test zfs.util.zfs_list with invalid permissions for the zfs executable
         """
         fake_p=flexmock(
-            communicate=lambda: (
-                '',
-                'Unable to open /dev/zfs: Permission denied.\n'),
-            returncode=1)
+            communicate = lambda: (
+                '', 'Unable to open /dev/zfs: Permission denied.\n'),
+            returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').and_return(fake_p)
         r = util.zfs_list()
@@ -58,13 +58,13 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         """
 
         fake_p=flexmock(
-            communicate=lambda: (self.mockedoutdaily,self.mockederr),
-            returncode= 0)
+            communicate = lambda: (self.mockedoutdaily,self.mockederr),
+            returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume','-s','name',
              '-o','name,com.sun:auto-snapshot,com.sun:auto-snapshot:daily'],
-            env=util.zfs_env,
+            env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return( fake_p)
 
         r = util.zfs_list(sort='name', properties=[
@@ -86,7 +86,7 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume'],
-            env=util.zfs_env,
+            env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list()
         assert r
@@ -99,13 +99,13 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         test zfs_list with a dataset that exists
         """
         fake_p=flexmock(
-            communicate=lambda: (self.mockedoutnoargstank,
-                                 self.mockederr),
-            returncode=0)
+            communicate = lambda: (self.mockedoutnoargstank,
+                                   self.mockederr),
+            returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
-            env=util.zfs_env,
+            env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(ds='tank')
         assert r
@@ -118,13 +118,13 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         test zfs_list with a dataset that exists and recurse
         """
         fake_p=flexmock(
-            communicate=lambda: (self.mockedoutnoargs,
-                                 self.mockederr),
-            returncode=0)
+            communicate = lambda: (self.mockedoutnoargs,
+                                   self.mockederr),
+            returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
-            env=util.zfs_env,
+            env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(ds='tank',recursive=True)
         assert r
@@ -139,13 +139,13 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         test zfs_list with a non-existent dataset
         """
         fake_p=flexmock(
-            communicate=lambda: (
+            communicate = lambda: (
                 '', "cannot open 'failboat': dataset does not exist\n"),
-            returncode=1)
+            returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'failboat'],
-            env=util.zfs_env,
+            env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
         r = util.zfs_list(ds='failboat')
@@ -156,12 +156,12 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         test zpool_status with a non existent pool name
         """
         fake_p=flexmock(
-            communicate=lambda: (
-                '', "cannot open 'failboat': no such pool\n"),
-            returncode=1)
+            communicate = lambda: ('',
+                                   "cannot open 'failboat': no such pool\n"),
+            returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'failboat'], env=util.zfs_env,
+            ['zpool', 'status', '-v', 'failboat'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -172,12 +172,11 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         test zpool_status with an existing pool name
         """
         fake_p=flexmock(
-            communicate=lambda: (
-                'fake it till you make it',''),
-            returncode=0)
+            communicate = lambda: ( 'fake it till you make it',''),
+            returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'pool1'], env=util.zfs_env,
+            ['zpool', 'status', '-v', 'pool1'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -185,21 +184,143 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         assert r
 
     def test_zpool_status_with_existing_pools(self):
-        """
-        test zpool_status with multiple existing pool names
-        """
+        """ test zpool_status with multiple existing pool names """
         fake_p=flexmock(
-            communicate=lambda: (
-                'dummy',''),
-            returncode=0)
+            communicate = lambda: ('dummy',''),
+            returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'pool1', 'pool2'], env=util.zfs_env,
+            ['zpool', 'status', '-v', 'pool1', 'pool2'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
         r = util.zpool_status(pools=['pool1','pool2'])
         assert r
+
+    def test_zfs_destroy_one_existing_item(self):
+        """test zfs_destroy with one existing snapshot"""
+        fake_p=flexmock(
+            communicate = lambda: ('',''),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo')
+        assert_equal(r, None)
+
+        # Now, with the recursive flag
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', '-r', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo', True)
+        assert_equal(r, None)
+
+    @raises(ZfsArgumentError)
+    def test_zfs_destroy_one_existing_item_by_list(self):
+        """test zfs_destroy with one existing snapshot passed as a list"""
+        fake_p=flexmock(
+            communicate = lambda: ('',''),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy(['tank@foo'])
+        assert_equal(r, None)
+
+    @raises(ZfsArgumentError)
+    def test_zfs_destroy_multiple_existing_items(self):
+        """test zfs_destroy with one existing snapshot passed as a list"""
+        fake_p=flexmock(
+            communicate = lambda: ('',''),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo', 'tank2@bar', 'cox@home'],
+            env=util.ZFS_ENV, stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy(['tank@foo', 'tank2@bar', 'cox@home'])
+        assert_equal(r, None)
+
+
+
+    @raises(ZfsPermissionError)
+    def test_zfs_destroy_bad_perms_linux(self):
+        """test zfs_destroy with bad permissions on /dev/zfs
+
+        This is typical for a ZFSOnLinux host, possilby for FreeBSD"""
+        fake_p=flexmock(
+            communicate = lambda: ( '', util.ZFS_ERROR_STRINGS['permerr']),
+            returncode  = 1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo')
+
+    @raises(ZfsPermissionError)
+    def test_zfs_destroy_bad_perms_granular(self):
+        """test zfs_destroy permission error using granular permission failure
+
+        This is more typical for Solaris where the permissions are granular.
+        """
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', "cannot destroy 'tank@foo': permission denied\n"),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo')
+
+    @raises(ZfsNoDatasetError)
+    def test_zfs_destroy_no_exist_linux(self):
+        """ test zfs_destroy when the specified snapshot doesn't exist on Linux
+
+        ZfsOnLinux returns a different error message than Solaris does when a
+        snapshot doesn't exist"""
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', util.ZFS_ERROR_STRINGS['nosnaplinux']),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo')
+
+    @raises(ZfsNoDatasetError)
+    def test_zfs_destroy_no_exist_solaris(self):
+        """ test zfs_destroy when the specified snapshot doesn't exist on Solaris
+
+        ZfsOnLinux returns a different error message than Solaris does when a
+        snapshot doesn't exist"""
+        fake_p=flexmock(
+            communicate=lambda: (
+                '', "cannot open 'tank@foo': dataset does not exist\n"),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_destroy('tank@foo')
 
 
 
