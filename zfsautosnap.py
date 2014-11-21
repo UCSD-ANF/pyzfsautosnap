@@ -12,4 +12,4 @@ if __name__ == "__main__":
     try:
         snapper.take_snapshot('//')
     except ZfsDatasetExistsError as e:
-        logging.critical(e.message)
+        logging.critical(e)
