@@ -12,65 +12,71 @@ USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
 KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
-def take_snapshot(fsnames, label="daily", snap_children=False, avoidsync=False):
-    """ Take a snapshot of all eligible filesystems given in fsnames
-    If fsnames is the special value '//', use the com.sun:auto-snapshot or the
-    com.sun:auto-snapshot:#{event} property to determine which filesystems to
-    snapshot"""
+class AutoSnapshotter():
+    def __init__(label, keep='all', avoidsync=False, prefix=PREFIX):
+        self.keep      = keep
+        self.label     = label
+        self.avoidsync = avoidsync
+        self.prefix    = PREFIX
 
-    today = datetime.datetime.now()
-    snapdate=today.strftime('%F-%H%M')
-    logging.debug("Snapdate is: %s"% snapdate)
-    snapname="%s_%s-%s" % (PREFIX, label, snapdate)
+    def take_snapshot(self, fsnames, snap_children=False):
+        """Take a snapshot of all eligible filesystems given in fsnames
 
-    # the '//' filesystem is special. We use it as a keyword to determine
-    # whether to poll the ZFS "com.sun:auto-snapshot" properties.
-    # Determine what these are, call ourselves again, then return.
-    if isinstance(fsnames, basestring) and fsnames == '//':
-        single_list,recursive_list = get_userprop_datasets(label=label)
+        If fsnames is the special value '//', use the com.sun:auto-snapshot or
+        the com.sun:auto-snapshot:#{event} property to determine which
+        filesystems to snapshot
+        """
 
-        logging.info("Taking non-recursive snapshots of: %s" %\
-                       single_list.join(', '))
-        single_state = take_snapshot(
-            single_list, label=label, snap_children=False,
-            avoidsync=avoidsync)
+        today = datetime.datetime.now()
+        snapdate=today.strftime('%F-%H%M')
+        logging.debug("Snapdate is: %s"% snapdate)
+        snapname="%s_%s-%s" % (self.prefix, self.label, snapdate)
 
-        logging.info("Taking recursive snapshots of: %s" %\
-                       recursive_list.join(', '))
-        recursive_state = take_snapshot(
-            recursive_list, label=label, snap_children=True,
-            avoidsync=avoidsync)
+        # the '//' filesystem is special. We use it as a keyword to determine
+        # whether to poll the ZFS "com.sun:auto-snapshot" properties.
+        # Determine what these are, call ourselves again, then return.
+        if isinstance(fsnames, basestring) and fsnames == '//':
+            single_list,recursive_list = get_userprop_datasets(label=self.label)
 
-        return single_state + recursive_state
+            logging.info("Taking non-recursive snapshots of: %s" %\
+                           single_list.join(', '))
+            single_state = take_snapshot(
+                single_list, label=self.label, snap_children=False,
+                avoidsync=self.avoidsync)
 
-    if avoidsync == True:
-        fsnames=filter_syncing_pools(fsnames)
+            logging.info("Taking recursive snapshots of: %s" %\
+                           recursive_list.join(', '))
+            recursive_state = take_snapshot(
+                recursive_list, label=self.label, snap_children=True,
+                avoidsync=self.avoidsync)
 
-    keep=KEEP['__default__']
-    if label in KEEP.keys():
-        keep=KEEP[label]
+            return single_state + recursive_state
 
-    # Since we are about to take a new snapshot, get rid of 1 extra
-    if keep != 'all':
-        keep -= 1
+        if self.avoidsync == True:
+            fsnames=filter_syncing_pools(fsnames)
 
-    for fs in fsnames:
-        # Ok, now say cheese! If we're taking recursive snapshots,
-        # walk through the children, destroying old ones if required.
-        destroy_older_snapshots(fs, keep, label, snap_children)
-        logging.info("Taking %s snapshot %s@%s" %s (
-            "recursive" if snap_children else "non-recursive",
-            fs,
-            snapname))
-        zfs_snapshot(fs,snapname,snap_children)
-    pass
+        keep=self.keep
+        # Since we are about to take a new snapshot, get rid of 1 extra
+        if keep != 'all':
+            keep -= 1
 
-def destroy_older_snapshots(filesys, keep, label, recursive=False):
+        for fs in fsnames:
+            # Ok, now say cheese! If we're taking recursive snapshots,
+            # walk through the children, destroying old ones if required.
+            destroy_older_snapshots(fs, keep, self.label, prefix, snap_children)
+            logging.info("Taking %s snapshot %s@%s" %s (
+                "recursive" if snap_children else "non-recursive",
+                fs,
+                snapname))
+            zfs_snapshot(fs,snapname,snap_children)
+        pass
+
+def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX, recursive=False):
     """Destroy old snapshots, keep newest around.
 
     Given a filesystem name, the number of snapshots we want to keep,
     along with the label for this set of snapshots, we destroy all older
-    snapshots of this filesystem whose names being with the text PREFIX_LABEL-
+    snapshots of this filesystem whose names being with the text prefix_label-
 
     If keep is set to the special value 'all', no older snapshots are removed.
 
@@ -83,7 +89,7 @@ def destroy_older_snapshots(filesys, keep, label, recursive=False):
     if keep == 'all':
         return 0
 
-    snappre="%s@%s_%s-" % (filesys, PREFIX, label)
+    snappre="%s@%s_%s-" % (filesys, prefix, label)
     r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
                  ds=filesys)
 

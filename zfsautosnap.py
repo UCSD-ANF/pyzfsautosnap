@@ -2,12 +2,11 @@
 import logging
 import sys
 from zfs import *
-from zfs.snapshot import take_snapshot
+from zfs.snapshot import AutoSnapshotter
 
 
 logging.basicConfig(level=logging.DEBUG)
 # ---------------- MAIN ---------------
 if __name__ == "__main__":
-    take_snapshot('//')
-
-
+    snapper=AutoSnapshotter('daily', 30)
+    snapper.take_snapshot('//')
