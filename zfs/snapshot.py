@@ -13,17 +13,24 @@ SEP=":"
 KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
 class AutoSnapshotter():
-    def __init__(label, keep='all', avoidsync=False, prefix=PREFIX):
-        self.keep      = keep
-        self.label     = label
-        self.avoidsync = avoidsync
-        self.prefix    = PREFIX
+    def __init__(
+        label,
+        keep='all',
+        avoidsync=False,
+        prefix=PREFIX,
+        userprop_name=USERPROP_NAME
+    ):
+        self.keep          = keep
+        self.label         = label
+        self.avoidsync     = avoidsync
+        self.prefix        = prefix
+        self.userprop_name = userprop_name
 
     def take_snapshot(self, fsnames, snap_children=False):
         """Take a snapshot of all eligible filesystems given in fsnames
 
-        If fsnames is the special value '//', use the com.sun:auto-snapshot or
-        the com.sun:auto-snapshot:#{event} property to determine which
+        If fsnames is the special value '//', use the #{self.userprop_name} or
+        the #{self.userprop_name}:#{self.label} property to determine which
         filesystems to snapshot
         """
 
@@ -33,10 +40,11 @@ class AutoSnapshotter():
         snapname="%s_%s-%s" % (self.prefix, self.label, snapdate)
 
         # the '//' filesystem is special. We use it as a keyword to determine
-        # whether to poll the ZFS "com.sun:auto-snapshot" properties.
+        # whether to poll the ZFS user properties.
         # Determine what these are, call ourselves again, then return.
         if isinstance(fsnames, basestring) and fsnames == '//':
-            single_list,recursive_list = get_userprop_datasets(label=self.label)
+            single_list,recursive_list = get_userprop_datasets(
+                label=self.label, userprop_name=self.userprop_name)
 
             logging.info("Taking non-recursive snapshots of: %s" %\
                            single_list.join(', '))
@@ -174,7 +182,7 @@ def narrow_recursive_filesystems(recursive_list):
             final_list.append(ds)
     return final_list
 
-def get_userprop_datasets(label="daily"):
+def get_userprop_datasets(label="daily", userprop_name=USERPROP_NAME):
     """ This builds two lists of datasets - RECURSIVE_LIST and SINGLE_LIST
     based on the value of ZFS user properties com.sun:auto-snapshot and
     com.sun:auto-snapshot:${label}
@@ -183,8 +191,8 @@ def get_userprop_datasets(label="daily"):
     """
 
     props=['name',
-           USERPROP_NAME,
-           SEP.join([USERPROP_NAME,label]) ]
+           userprop_name,
+           SEP.join([userprop_name,label]) ]
 
     r=zfs_list(sort='name', properties=props)
     save=[]
