@@ -1,6 +1,6 @@
-from zfs import *
-import zfs.util
-import zfsautosnap
+from . import *
+import util
+import snapshot as zfsautosnap
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
 
@@ -138,6 +138,7 @@ def test_destroy_older_snapshots():
     myzfsautosnap.should_receive('zfs_list').with_args(
         types=['snapshot'], sort='creation', properties=['name'], ds='tank/foo',
     ).and_return(iter(p))
+    myzfsautosnap.should_receive('zfs_destroy').and_return()
     r=myzfsautosnap.destroy_older_snapshots(
         filesys='tank/foo', keep=3, label='hourly', recursive=False)
     assert_equal(r, 4)
