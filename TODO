@@ -1,3 +1,0 @@
-* split out the get_userprop_datasets into submodule
-* split out the actual snapshotting mechanism into submodule
-* consider combining tests files with classes being tested
