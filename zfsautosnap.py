@@ -9,4 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 # ---------------- MAIN ---------------
 if __name__ == "__main__":
     snapper=AutoSnapshotter('daily', 30)
-    snapper.take_snapshot('//')
+    try:
+        snapper.take_snapshot('//')
+    except ZfsDatasetExistsError as e:
+        logging.critical(e.message)
