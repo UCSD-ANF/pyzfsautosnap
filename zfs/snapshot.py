@@ -90,7 +90,8 @@ class AutoSnapshotter():
         for fs in fsnames:
             # Ok, now say cheese! If we're taking recursive snapshots,
             # walk through the children, destroying old ones if required.
-            destroy_older_snapshots(fs, keep, self.label, prefix, snap_children)
+            destroy_older_snapshots(fs, keep, self.label,
+                                    self.prefix, snap_children)
             logging.info("Taking %s snapshot %s@%s" %s (
                 "recursive" if snap_children else "non-recursive",
                 fs,
@@ -98,14 +99,17 @@ class AutoSnapshotter():
             zfs_snapshot(fs,snapname,snap_children)
         pass
 
-def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX, recursive=False):
-    """Destroy old snapshots, keep newest around.
+def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
+                            recursive=False):
+    """Destroy old snapshots, keeping 'keep' newest around.
 
-    Given a filesystem name, the number of snapshots we want to keep,
-    along with the label for this set of snapshots, we destroy all older
-    snapshots of this filesystem whose names being with the text prefix_label-
+    Given a filesystem name, the number of snapshots we want to keep, along
+    with the label for this set of snapshots, we destroy all older
+    snapshots of this filesystem whose names being with the text
+    prefix_label-
 
-    If keep is set to the special value 'all', no older snapshots are removed.
+    If keep is set to the special value 'all', no older snapshots are
+    removed.
 
     Note that unlike the original ksh function, we actually keep around the
     requested number of snapshots, rather than "keep - 1".
