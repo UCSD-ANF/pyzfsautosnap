@@ -22,11 +22,14 @@ testreaderoutput=[
 
 def test_autosnapshotter():
     """Test instanciation of the Autosnapshotter object"""
-    flexmock(util, zfs_snapshot=None)
     mocksnap=flexmock(zfsautosnap,
-                      get_userprop_datasets=([],[]),
+                      get_userprop_datasets=(
+                          ['tank/snapnorecurse'],
+                          ['tank/snaprecurse','tank/snapnorecurse/child2']),
                       filter_syncing_pools=lambda x: x,
+                      destroy_older_snapshots=5,
                      )
+    mocksnap.should_receive('zfs_snapshot').and_return()
     snapper=mocksnap.AutoSnapshotter(label="daily", keep=24)
     snapper.take_snapshot('//')
 

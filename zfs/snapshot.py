@@ -5,7 +5,7 @@ import csv
 import re
 import datetime
 from . import *
-from util import zfs_list, is_syncing, zfs_destroy
+from util import zfs_list, is_syncing, zfs_destroy, zfs_snapshot
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
@@ -92,7 +92,7 @@ class AutoSnapshotter():
             # walk through the children, destroying old ones if required.
             destroy_older_snapshots(fs, keep, self.label,
                                     self.prefix, snap_children)
-            logging.info("Taking %s snapshot %s@%s" %s (
+            logging.info("Taking %s snapshot %s@%s" % (
                 "recursive" if snap_children else "non-recursive",
                 fs,
                 snapname))
