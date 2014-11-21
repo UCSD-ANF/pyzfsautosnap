@@ -133,8 +133,8 @@ def test_filter_syncing_pools_badname():
 def test_destroy_older_snapshots():
     """test destroy_older_snapshots"""
 
-    # Test output below has 7 hourly snapshots of tank/foo and tank/foo/bar,
-    # one daily snapshot each of tank/foo and tank/foo/bar,
+    # Test output below has 7 hourly snapshots of tank/foo and
+    # tank/foo/bar, one daily snapshot each of tank/foo and tank/foo/bar,
     # and one manual snapshot.
     p=[
         'tank/foo@zfs-auto-snap_hourly-2014-11-20-0500',
@@ -161,6 +161,7 @@ def test_destroy_older_snapshots():
         ds='tank/foo', recursive=True
     ).and_return(iter(p))
     myzfsautosnap.should_receive('zfs_destroy').and_return()
+
     r=myzfsautosnap.destroy_older_snapshots(
         filesys='tank/foo', keep=3, label='hourly', recursive=False)
     assert_equal(r, 4)
