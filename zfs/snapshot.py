@@ -13,6 +13,24 @@ SEP=":"
 KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
 class AutoSnapshotter():
+    """Automatically snapshot ZFS filesystems
+
+    This class will manage automatic snapshots for ZFS
+    filesystems. Snapshots will be named according to the
+    pattern #{prefix}_#{label}-#{date}.
+
+    Older snapshots for the given label value will be
+    automatically purged, with the most recent items
+    retained per the keep attribute. If keep is the special
+    value 'all', all older snapshots are retained.
+
+    Attributes:
+        label           The label for this set of snapshots
+        keep            Number of older snapshots to keep, or 'all'
+        avoidsync       Avoid fs on zpools in scrub/resilver state
+        prefix          First part of snapshot name
+        userprop_name   name of the ZFS user property to check
+    """
     def __init__(
         self,
         label,
@@ -21,6 +39,9 @@ class AutoSnapshotter():
         prefix=PREFIX,
         userprop_name=USERPROP_NAME
     ):
+        """Create new AutoSnapshotter instance
+        """
+
         self.keep          = keep
         self.label         = label
         self.avoidsync     = avoidsync
@@ -48,18 +69,15 @@ class AutoSnapshotter():
                 label=self.label, userprop_name=self.userprop_name)
 
             logging.info("Taking non-recursive snapshots of: %s" %\
-                           single_list.join(', '))
-            single_state = take_snapshot(
-                single_list, label=self.label, snap_children=False,
-                avoidsync=self.avoidsync)
+                           ', '.join(single_list))
+            single_state = self.take_snapshot(single_list, snap_children=False)
 
             logging.info("Taking recursive snapshots of: %s" %\
-                           recursive_list.join(', '))
-            recursive_state = take_snapshot(
-                recursive_list, label=self.label, snap_children=True,
-                avoidsync=self.avoidsync)
+                           ', '.join(recursive_list))
+            recursive_state = self.take_snapshot(
+                recursive_list, snap_children=True)
 
-            return single_state + recursive_state
+            return
 
         if self.avoidsync == True:
             fsnames=filter_syncing_pools(fsnames)

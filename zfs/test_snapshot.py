@@ -22,7 +22,13 @@ testreaderoutput=[
 
 def test_autosnapshotter():
     """Test instanciation of the Autosnapshotter object"""
-    snapper=zfsautosnap.AutoSnapshotter(label="daily", keep=24)
+    flexmock(util, zfs_snapshot=None)
+    mocksnap=flexmock(zfsautosnap,
+                      get_userprop_datasets=([],[]),
+                      filter_syncing_pools=lambda x: x,
+                     )
+    snapper=mocksnap.AutoSnapshotter(label="daily", keep=24)
+    snapper.take_snapshot('//')
 
 def test_can_recursive_snapshot():
     """ test can_recursive snapshot
