@@ -14,6 +14,7 @@ KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
 class AutoSnapshotter():
     def __init__(
+        self,
         label,
         keep='all',
         avoidsync=False,

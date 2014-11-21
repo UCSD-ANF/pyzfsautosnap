@@ -20,6 +20,10 @@ testreaderoutput=[
     ['tank/snaprecurse/child2', 'true', '-'],
 ]
 
+def test_autosnapshotter():
+    """Test instanciation of the Autosnapshotter object"""
+    snapper=zfsautosnap.AutoSnapshotter(label="daily", keep=24)
+
 def test_can_recursive_snapshot():
     """ test can_recursive snapshot
 
