@@ -12,7 +12,7 @@ USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
 KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
-class AutoSnapshotter():
+class RollingSnapshotter():
     """Automatically snapshot ZFS filesystems
 
     This class will manage automatic snapshots for ZFS
@@ -39,7 +39,7 @@ class AutoSnapshotter():
         prefix=PREFIX,
         userprop_name=USERPROP_NAME
     ):
-        """Create new AutoSnapshotter instance
+        """Create new RollingSnapshotter instance
         """
 
         self.keep          = keep

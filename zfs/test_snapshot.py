@@ -30,7 +30,7 @@ def test_autosnapshotter():
                       destroy_older_snapshots=5,
                      )
     mocksnap.should_receive('zfs_snapshot').and_return()
-    snapper=mocksnap.AutoSnapshotter(label="daily", keep=24)
+    snapper=mocksnap.RollingSnapshotter(label="daily", keep=24)
     snapper.take_snapshot('//')
 
 def test_can_recursive_snapshot():
