@@ -29,7 +29,8 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
     Returns an iterable of lists with each field occupying one field of the
     list. This is performed under the hood by relying on the -H option to
     output a tab-delimited field of properties, and calling the csv.reader to
-    read them.
+    read them. This occurs even if only one output field was requested, so be
+    sure to expect something like ['foo'] instead of 'foo'
     """
     cmd=[ 'zfs', 'list', '-H' ]
 
