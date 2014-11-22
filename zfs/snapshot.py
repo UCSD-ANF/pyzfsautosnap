@@ -129,7 +129,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     logging.debug("Subsetting for snapshots starting with %s" % snappre)
     # Remove all snapshots for child filesystems and those that aren't for
     # our given label
-    rs = [x for x in r if x[:len(snappre)] == snappre]
+    rs = [x[0] for x in r if x[0][:len(snappre)] == snappre]
 
     to_remove=rs[keep:]
     removed=0

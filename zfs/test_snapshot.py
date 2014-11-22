@@ -140,29 +140,30 @@ def test_destroy_older_snapshots():
     # tank/foo/bar, one daily snapshot each of tank/foo and tank/foo/bar,
     # and one manual snapshot.
     p=[
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0500',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0500',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0400',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0400',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0300',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0300',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0200',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0200',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0100',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0100',
-        'tank/foo@manual-snapshot',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-20-0000',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0000',
-        'tank/foo@zfs-auto-snap_daily-2014-11-19-0003',
-        'tank/foo/bar@zfs-auto-snap_daily-2014-11-19-0003',
-        'tank/foo@zfs-auto-snap_hourly-2014-11-19-2300',
-        'tank/foo/bar@zfs-auto-snap_hourly-2014-11-19-2300',
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0500'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0500'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0400'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0400'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0300'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0300'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0200'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0200'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0100'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0100'],
+        ['tank/foo@manual-snapshot'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-20-0000'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-20-0000'],
+        ['tank/foo@zfs-auto-snap_daily-2014-11-19-0003'],
+        ['tank/foo/bar@zfs-auto-snap_daily-2014-11-19-0003'],
+        ['tank/foo@zfs-auto-snap_hourly-2014-11-19-2300'],
+        ['tank/foo/bar@zfs-auto-snap_hourly-2014-11-19-2300'],
     ]
     myzfsautosnap=flexmock(zfsautosnap)
     myzfsautosnap.should_receive('zfs_list').with_args(
         types=['snapshot'], sort='creation', properties=['name'],
         ds='tank/foo', recursive=True
     ).and_return(iter(p))
+
     myzfsautosnap.should_receive('zfs_destroy').and_return()
 
     r=myzfsautosnap.destroy_older_snapshots(
