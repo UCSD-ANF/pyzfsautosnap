@@ -24,6 +24,14 @@ def test_main_bad_args():
     r=main(args)
     assert(r)
 
+@raises(SystemExit)
+def test_main_bad_keep():
+    fakesnapper=flexmock(RollingSnapshotter)
+    fakesnapper.should_receive('take_snapshot').and_return()
+    args=['testapp','stinkily','poorly']
+    r=main(args)
+    assert(r)
+
 def test_main_enough_args():
     fakesnapper=flexmock(RollingSnapshotter)
     fakesnapper.should_receive('take_snapshot').and_return()

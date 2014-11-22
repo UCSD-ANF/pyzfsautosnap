@@ -48,6 +48,11 @@ def main(args=None):
         op.error('label not provided')
     if not options.keep:
         op.error('number of snapshots to keep not provided')
+    if options.keep != 'all':
+        try:
+            options.keep=int(options.keep)
+        except ValueError:
+            op.error('Keep must be either a number or "all"')
 
     app=App(options)
     return app.run()
