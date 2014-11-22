@@ -126,6 +126,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
                  ds=filesys, recursive=True)
 
+    logging.debug("Subsetting for snapshots starting with %s" % snappre)
     # Remove all snapshots for child filesystems and those that aren't for
     # our given label
     rs = [x for x in r if x[:len(snappre)] == snappre]
