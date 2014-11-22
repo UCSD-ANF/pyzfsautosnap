@@ -185,9 +185,12 @@ def filter_syncing_pools(fsnames):
     return nosyncfilesys
 
 def can_recursive_snapshot(ds, excludes):
-    """ Given a list of datasets to exclude, check if the dataset named ds
+    """Check if a dataset can be recursively snapshotted
+
+    Given a list of datasets to exclude, check if the dataset named ds
     has a child filesystem that is in the exclude list. If so, ds cannot be
-    recursively snapshotted. """
+    recursively snapshotted.
+    """
     sds=ds.split('/')
     for exc in excludes:
         sexc=exc.split('/')
@@ -198,6 +201,13 @@ def can_recursive_snapshot(ds, excludes):
     return True
 
 def narrow_recursive_filesystems(recursive_list):
+    """Get minimum list of recursive filesystems
+
+    Return a list of only the filesystems that are not a child of any other
+    filesystem in the input recursive_list. For example, given the input
+    ['foo','baz','foo/bar'], this function will return ['foo','baz']
+    """
+
     final_list=[]
     for ds in recursive_list:
         sds=ds.split('/')
