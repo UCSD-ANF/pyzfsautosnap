@@ -130,6 +130,8 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     # our given label
     rs = [x for x in r if x[:len(snappre)] == snappre]
 
+    logging.debug("Got back %d total snapshots pre subset, %d post" % (
+        len(r), len(rs))
     to_remove=rs[keep:]
     removed=0
     logging.debug(
