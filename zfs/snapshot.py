@@ -132,8 +132,9 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
 
     to_remove=rs[keep:]
     removed=0
-    logging.debug("Should remove %d snapshots for filesys %s" % (
-        len(to_remove), filesys))
+    logging.debug(
+        "Should remove %d of %d snapshots for filesys %s (keep=%d)" % (
+        len(to_remove), len(rs), filesys, keep))
     for snapshot in to_remove:
         try:
             zfs_destroy(snapshot, recursive=recursive)
