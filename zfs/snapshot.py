@@ -85,18 +85,20 @@ class AutoSnapshotter():
         keep=self.keep
         # Since we are about to take a new snapshot, get rid of 1 extra
         if keep != 'all':
-            keep -= 1
+            keep = keep - 1
 
         for fs in fsnames:
-            # Ok, now say cheese! If we're taking recursive snapshots,
-            # walk through the children, destroying old ones if required.
-            destroy_older_snapshots(fs, keep, self.label,
-                                    self.prefix, snap_children)
+            # Ok, now say cheese!
             logging.info("Taking %s snapshot %s@%s" % (
                 "recursive" if snap_children else "non-recursive",
                 fs,
                 snapname))
             zfs_snapshot(fs,snapname,snap_children)
+
+            # If we're taking recursive snapshots,
+            # walk through the children, destroying old ones if required.
+            destroy_older_snapshots(fs, keep, self.label,
+                                    self.prefix, snap_children)
         pass
 
 def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
@@ -128,8 +130,11 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     # our given label
     rs = [x for x in r if x[:len(snappre)] == snappre]
 
+    to_remove=rs[keep:]
     removed=0
-    for snapshot in rs[keep:]:
+    logging.debug("Should remove %d snapshots for filesys %s" % (
+        len(to_remove), filesys))
+    for snapshot in to_remove:
         try:
             zfs_destroy(snapshot, recursive=recursive)
         # Not catching ZfsArgumentErrors because those are programming problems
