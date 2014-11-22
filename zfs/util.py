@@ -57,7 +57,7 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
                        stderr=subprocess.PIPE)
     out,err=p.communicate()
     rc=p.returncode
-    logging.debug('process returned result code %d' % rc)
+    logging.debug('command %s returned result code %d' % (str(cmd),rc))
 
     if rc > 0:
         _check_perm_err(err)
@@ -93,7 +93,7 @@ def zfs_destroy(dataset, recursive=False):
                        env=ZFS_ENV)
     out,err=p.communicate()
     rc=p.returncode
-    logging.debug('process returned result code %d' % rc)
+    logging.debug('command %s returned result code %d' % (str(cmd),rc))
 
     if rc > 0:
         _check_perm_err(err)
@@ -139,7 +139,7 @@ def zfs_snapshot(filesys, snapname, recursive=False):
                        env=ZFS_ENV)
     out,err=p.communicate()
     rc=p.returncode
-    logging.debug('process returned result code %d' % rc)
+    logging.debug('command %s returned result code %d' % (str(cmd),rc))
 
     if rc > 0:
         _check_perm_err(err)
@@ -181,7 +181,7 @@ def zpool_status(pools=None):
                        env=ZFS_ENV)
     out,err=p.communicate()
     rc=p.returncode
-    logging.debug('process returned result code %d' % rc)
+    logging.debug('command %s returned result code %d' % (str(cmd),rc))
 
     if rc > 0:
         _check_perm_err(err)
