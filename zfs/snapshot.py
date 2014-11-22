@@ -12,6 +12,16 @@ USERPROP_NAME='com.sun:auto-snapshot'
 SEP=":"
 KEEP={'hourly': 24, 'daily': 30, '__default__': 10}
 
+def validate_keep(keep):
+    """validates the value of the keep parameter
+
+    If it's not coercable to an int or equal to the special string values,
+    raise a ValueError. Otherwise, return keep.
+    """
+    if keep != 'all':
+        keep=int(keep)
+    return keep
+
 class RollingSnapshotter():
     """Automatically snapshot ZFS filesystems
 
@@ -41,6 +51,7 @@ class RollingSnapshotter():
     ):
         """Create new RollingSnapshotter instance
         """
+        validate_keep(keep)
 
         self.keep          = keep
         self.label         = label
@@ -82,7 +93,7 @@ class RollingSnapshotter():
         if self.avoidsync == True:
             fsnames=filter_syncing_pools(fsnames)
 
-        keep=self.keep
+        keep=validate_keep(self.keep)
         # Since we are about to take a new snapshot, get rid of 1 extra
         if keep != 'all':
             keep = keep - 1

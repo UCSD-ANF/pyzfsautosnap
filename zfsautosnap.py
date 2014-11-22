@@ -5,7 +5,7 @@ import logging
 import sys
 from optparse import OptionParser
 from zfs import *
-from zfs.snapshot import RollingSnapshotter
+from zfs.snapshot import RollingSnapshotter, validate_keep
 
 class App(object):
     """The ZFS automatic snapshotter application"""
@@ -48,11 +48,10 @@ def main(args=None):
         op.error('label not provided')
     if not options.keep:
         op.error('number of snapshots to keep not provided')
-    if options.keep != 'all':
-        try:
-            options.keep=int(options.keep)
-        except ValueError:
-            op.error('Keep must be either a number or "all"')
+    try:
+        options.keep=validate_keep(options.keep)
+    except ValueError:
+        op.error('Keep must be either a number or "all"')
 
     app=App(options)
     return app.run()

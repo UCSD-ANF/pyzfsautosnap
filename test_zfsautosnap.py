@@ -26,6 +26,11 @@ def test_main_bad_args():
 
 @raises(SystemExit)
 def test_main_bad_keep():
+    """test main with a bad keep option
+
+    Should choke because args[2] is not parsable as a number or 'all'
+    """
+
     fakesnapper=flexmock(RollingSnapshotter)
     fakesnapper.should_receive('take_snapshot').and_return()
     args=['testapp','stinkily','poorly']
@@ -33,6 +38,9 @@ def test_main_bad_keep():
     assert(r)
 
 def test_main_enough_args():
+    """test main with the proper number of arguments
+    """
+
     fakesnapper=flexmock(RollingSnapshotter)
     fakesnapper.should_receive('take_snapshot').and_return()
     args=['testapp', 'stinkily', '5']
