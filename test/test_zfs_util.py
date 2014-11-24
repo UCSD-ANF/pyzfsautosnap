@@ -2,15 +2,15 @@ import logging
 import sys
 import subprocess
 from subprocess import Popen, PIPE, CalledProcessError
-import util
+import zfs.util
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
-from . import *
+from zfs import *
 import StringIO
 
 class Test:
     """
-    Test zfs.utils
+    Test zfs.util
 
     Makes heavy use of subprocess mocking calls to simulate various calls to the
     zfs command line utility.
