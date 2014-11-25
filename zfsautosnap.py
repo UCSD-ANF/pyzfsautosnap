@@ -65,6 +65,12 @@ def main(args=None):
 
     This function parses and validates command line arguments, constructs
     an options object, and instanciates an instance of App.
+
+    It is as simple to use as:
+        exit(main())
+
+    However, the args parameter can be defined in order to construct your own
+    command line. This is useful for testing.
     """
 
     if args is None:
