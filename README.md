@@ -8,5 +8,5 @@ OpenSolaris.
 
 TODO
 ----
-* move tests out of zfs package
-* test AutoSnapshotter class
+* Add snapshot syncronization as client/server
+** use mbuffer for the sync stuff, SSH wrapper or something for setup of stream
