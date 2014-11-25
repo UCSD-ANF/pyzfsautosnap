@@ -1,6 +1,5 @@
-from . import *
-import util
-import snapshot as zfssnapshot
+from zfs import *
+import zfs.snapshot as zfssnapshot
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
 
