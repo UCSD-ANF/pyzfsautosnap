@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Script to automatically snapshot ZFS filesystems"""
+"""Automatically snapshot ZFS filesystems"""
 
 import logging
 import sys
@@ -8,11 +8,31 @@ from zfs import *
 from zfs.snapshot import RollingSnapshotter, validate_keep
 
 class App(object):
-    """The ZFS automatic snapshotter application"""
+    """The ZFS automatic snapshotter application
+
+    Usage:
+
+        myapp = App(options)
+        app.run()
+    """
 
     def __init__(self, options):
+        """Initialize the App
+
+        "options" is an object that has at least the following properties
+        defined:
+            label - name snapshots with this string, e.g. 'hourly' or 'daily'
+            keep  - number of total snapshots to retain, including the one we
+                    have just created.
+
+        Additionally, if options.dataset is defined, it will be used instead
+        of the default value of '//' (which means check the user properties for
+        which filesystems to snapshot).
+
+        "options" is implemented as a generic object with properties so that
+        the output of an OptionParser can be passed directly to the app.
+        """
         self.options=options
-        """Initialize the App"""
         if options.verbose:
             level=logging.DEBUG
         else:
@@ -20,14 +40,20 @@ class App(object):
 
         logging.basicConfig(level=level)
 
+        if not hasattr(self.config, 'dataset'):
+            self.options.dataset='//'
+
     def run(self):
-        """Run this application"""
+        """Run this application
+
+        Returns: a result code suitable for passing to exit()
+        """
 
         ret = 0
 
         snapper=RollingSnapshotter(self.options.label, self.options.keep)
         try:
-            snapper.take_snapshot('//')
+            snapper.take_snapshot(self.options.dataset)
         except ZfsDatasetExistsError as e:
             logging.critical(e)
             ret=1
@@ -35,6 +61,12 @@ class App(object):
         return ret
 
 def main(args=None):
+    """Main function for zfsautosnap
+
+    This function parses and validates command line arguments, constructs
+    an options object, and instanciates an instance of App.
+    """
+
     if args is None:
         args = sys.argv
 
