@@ -5,7 +5,8 @@ import csv
 import re
 import datetime
 from . import *
-from util import zfs_list, is_syncing, zfs_destroy, zfs_snapshot
+from util import (zfs_list, is_syncing, zfs_destroy, zfs_snapshot,
+                  get_pool_from_fsname)
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
@@ -175,9 +176,7 @@ def filter_syncing_pools(fsnames):
     nosyncfilesys=[]
 
     for fs in fsnames:
-        pool=fs.split('/')[0]
-        if pool == '':
-            raise ZfsBadFsName(fs)
+        pool=get_pool_from_fsname(fs)
 
         if pool in poolcache.keys():
             if poolcache[pool]==True:

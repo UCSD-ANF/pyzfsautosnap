@@ -18,6 +18,20 @@ ZFS_ERROR_STRINGS={
     'nosnaplinux': "could not find any snapshots to destroy; check snapshot names.\n",
 }
 
+def get_pool_from_fsname(fsname):
+    """Return the ZFS pool containing fsname
+
+    Given a ZFS filesystem, return which pool contains it. This is usually
+    the part of the filesystem before the first forward slash.
+
+    If the fsname is malforned, raise a ZfsBadFsName exeception
+    """
+    r = re.match('^[a-zA-Z0-9\-_ .]+(/[a-zA-Z0-9\-_ .]+)*$', fsname)
+    if r == None:
+        raise ZfsBadFsName(fsname)
+    pool = fsname.split('/')[0]
+    return pool
+
 def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
              ds=None, recursive=False):
     """List the specified properties about Zfs datasets

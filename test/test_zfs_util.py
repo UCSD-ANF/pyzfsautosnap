@@ -385,6 +385,24 @@ For the delegated permission list, run: zfs allow|unallow
         r = util.zfs_snapshot('tank', 'foo', True)
         assert_equal(r, None)
 
+    def test_get_pool_from_fsname(self):
+        """Test ability to get zpool name from fsname
+        """
+
+        r = zfs.util.get_pool_from_fsname('foo')
+        assert_equal(r, 'foo')
+
+        r = zfs.util.get_pool_from_fsname('foo/bar/baz')
+        assert_equal(r, 'foo')
+
+        r = zfs.util.get_pool_from_fsname('foo/foo/foo')
+        assert_equal(r, 'foo')
+
+        # This should definitely raise a ZfsBadFsName
+        assert_raises(ZfsBadFsName, zfs.util.get_pool_from_fsname, 'foo//foo')
+
+        # This should definitely raise a ZfsBadFsName
+        assert_raises(ZfsBadFsName, zfs.util.get_pool_from_fsname, '/foo')
 
 
 if __name__ == '__main__':
