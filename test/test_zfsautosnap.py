@@ -6,6 +6,10 @@ from zfsautosnap import App, main
 from zfs.snapshot import RollingSnapshotter
 
 def test_app():
+    """Test instantiating an App object directly
+
+    Bypasses the main function for the module
+    """
     fakesnapper=flexmock(RollingSnapshotter)
     fakesnapper.should_receive('take_snapshot').and_return()
     options=Values()
@@ -18,6 +22,10 @@ def test_app():
 
 @raises(SystemExit)
 def test_main_bad_args():
+    """test main with no args
+
+    should die due to lack of options passed to main
+    """
     fakesnapper=flexmock(RollingSnapshotter)
     fakesnapper.should_receive('take_snapshot').and_return()
     args=['testapp']
