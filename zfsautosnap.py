@@ -40,7 +40,7 @@ class App(object):
 
         logging.basicConfig(level=level)
 
-        if not hasattr(self.config, 'dataset'):
+        if not hasattr(self.options, 'dataset'):
             self.options.dataset='//'
 
     def run(self):
