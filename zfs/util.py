@@ -17,6 +17,7 @@ ZFS_ERROR_STRINGS={
     'permerr': "Unable to open /dev/zfs: Permission denied.\n",
     'nosnaplinux': "could not find any snapshots to destroy; check snapshot names.\n",
 }
+_FS_COMP='[a-zA-Z0-0\-_.]+'
 
 def get_pool_from_fsname(fsname):
     """Return the ZFS pool containing fsname
@@ -24,13 +25,71 @@ def get_pool_from_fsname(fsname):
     Given a ZFS filesystem, return which pool contains it. This is usually
     the part of the filesystem before the first forward slash.
 
-    If the fsname is malforned, raise a ZfsBadFsName exeception
+    If the fsname is malformed, raise a ZfsBadFsName exeception
     """
-    r = re.match('^[a-zA-Z0-9\-_ .]+(/[a-zA-Z0-9\-_ .]+)*$', fsname)
-    if r == None:
-        raise ZfsBadFsName(fsname)
+    _validate_fsname(fsname)
     pool = fsname.split('/')[0]
     return pool
+
+def get_zpool_guid(pool):
+    """Get the GUID of a zpool
+
+    Convenience function to retrieve the GUID of a single zpool.
+    """
+    _validate_poolname(pool)
+    r = zpool_list(pools=pool, properties=['name','guid'])
+    s = r.next()
+    return s[1]
+
+def zpool_list(pools=None, properties=None):
+    """List the specified properties about Zpools
+
+    Run the zpool list command, optionally retrieving only the specified
+    properties. If no pool is provided, the zpool list default behavior of
+    listing all zpools is used.
+
+    If no properties are provided, the zpool default columns are used. This
+    varies by platform and implementation, but typically looks like:
+        NAME, SIZE, ALLOC, FREE, CAP, DEDUP, HEALTH, ALTROOT
+
+    Note that support for listing the individual vdev properties under the
+    zpool (the -v option to zpool list) is not supported at this time.
+
+    Returns an iterable of lists with each requested property occupying one
+    field of the list. This is performed under the hood by relying on the -H
+    option to output a tab-delimited field of properties, and calling the
+    csv.reader to read them. This occurs even if only out output field was
+    requested, so be sure to expect something like ['foo'] instead of 'foo'
+    """
+    cmd=['zpool', 'list', '-H' ]
+    if properties is not None:
+        cmd_columns=','.join(properties)
+        cmd.append('-o')
+        cmd.append(cmd_columns)
+
+    if pools is not None:
+        if isinstance(pools,basestring):
+            cmd.append(pools)
+        else:
+            cmd.extend(pools)
+
+    p=subprocess.Popen(cmd, env=ZFS_ENV, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+    out,err=p.communicate()
+    rc=p.returncode
+    logging.debug('command %s returned result code %d' % (str(cmd),rc))
+
+    if rc > 0:
+        _check_perm_err(err)
+        if "no such pool" in err:
+            raise ZfsNoPoolError(err)
+        else:
+            raise subprocess.CalledProcessError(rc, cmd)
+
+    r=csv.reader(StringIO(out), delimiter="	")
+
+    return r
+
 
 def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
              ds=None, recursive=False):
@@ -131,6 +190,24 @@ def _check_perm_err(errstring):
     """
     if errstring == ZFS_ERROR_STRINGS['permerr']:
         raise ZfsPermissionError(errno.EPERM, errstring, '/dev/zfs')
+
+def _validate_fsname(fsname):
+    """Verify that the given fsname is a valid ZFS filesystem name
+
+    Raises a ZfsBadFsName if it's invalid
+    """
+    r = re.match('^' + _FS_COMP + '(/' + _FS_COMP + ')*$', fsname)
+    if r == None:
+        raise ZfsBadFsName(fsname)
+
+def _validate_poolname(poolname):
+    """Verify that the given poolname is a valid ZFS Zpool name
+
+    Raises a ZfsBadFsName if it's invalid
+    """
+    r = re.match('^'+_FS_COMP+'$', poolname)
+    if r == None:
+        raise ZfsBadFsName(poolname)
 
 def zfs_snapshot(filesys, snapname, recursive=False):
     """Snapshot a ZFS filesystem

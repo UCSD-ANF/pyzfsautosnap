@@ -40,6 +40,103 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
     mockedoutnoargstank="tank	3.91G	3.56T	3.91G	/tank\n"
 
     @raises(ZfsPermissionError)
+    def test_zpool_list_with_bad_permission(self):
+        """
+        Test zfs.util.zpool_list with invalid permissions for the zfs executable
+        """
+        fake_p=flexmock(
+            communicate = lambda: (
+                '', 'Unable to open /dev/zfs: Permission denied.\n'),
+            returncode  = 1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').and_return(fake_p)
+        r = util.zpool_list()
+
+    def test_zpool_list_with_properties(self):
+        """
+        Test zfs.util.zpool_list with the properties argument
+        """
+
+        fake_p=flexmock(
+            communicate = lambda: ("tank\t3.62T",self.mockederr),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            [ 'zpool', 'list', '-H',
+             '-o','name,size'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return( fake_p)
+
+        r = util.zpool_list(properties=[
+            'name',
+            'size'])
+        assert r
+        line = r.next()
+        assert line[0] == 'tank'
+        assert len(line) == 2
+
+    def test_zpool_list_with_no_args(self):
+        """
+        test zfs_list with no arguments
+        """
+        fake_p=flexmock(
+            communicate=lambda: ("tank\t3.62T\t3.91G\t0%\t1.00x\tONLINE\t-",
+                                 self.mockederr),
+            returncode=0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            [ 'zpool', 'list', '-H'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return(fake_p)
+        r = util.zpool_list()
+        assert r
+        line = r.next()
+        assert_equal(line[0], 'tank')
+        assert_equal(len(line),7)
+
+    def test_zpool_list_with_existing_ds(self):
+        """
+        test zpool_list with a dataset that exists
+        """
+        fake_p=flexmock(
+            communicate=lambda: ("tank\t3.62T\t3.91G\t0%\t1.00x\tONLINE\t-\n",
+                                   self.mockederr),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            [ 'zpool', 'list', '-H', 'tank'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return(fake_p)
+        r = util.zpool_list(pools='tank')
+        assert r
+        line = r.next()
+        assert_equal(line[0],'tank')
+        assert_equal(len(line), 7)
+        r = util.zpool_list(pools=['tank'])
+        assert r
+        line = r.next()
+        assert_equal(line[0],'tank')
+        assert_equal(len(line), 7)
+
+
+    @raises(ZfsNoPoolError)
+    def test_zpool_list_with_nonexistent_pool(self):
+        """
+        test zpool_list with a non existent pool name
+        """
+        fake_p=flexmock(
+            communicate = lambda: ('',
+                                   "cannot open 'failboat': no such pool\n"),
+            returncode  = 1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zpool', 'list', '-H', 'failboat'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zpool_list(pools='failboat')
+
+    @raises(ZfsPermissionError)
     def test_zfs_list_with_bad_permission(self):
         """
         Test zfs.util.zfs_list with invalid permissions for the zfs executable
@@ -403,6 +500,16 @@ For the delegated permission list, run: zfs allow|unallow
 
         # This should definitely raise a ZfsBadFsName
         assert_raises(ZfsBadFsName, zfs.util.get_pool_from_fsname, '/foo')
+
+    def test_get_zpool_guid(self):
+        guid='16263632456085043332'
+        myzfsutil=flexmock(zfs.util)
+        myzfsutil.should_receive('zpool_list').with_args(
+            properties=['name','guid'], pools='tank'
+        ).and_return(iter([['tank', guid]]))
+        r = myzfsutil.get_zpool_guid('tank')
+        assert_equal(r, guid)
+
 
 
 if __name__ == '__main__':
