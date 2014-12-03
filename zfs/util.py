@@ -17,7 +17,7 @@ ZFS_ERROR_STRINGS={
     'permerr': "Unable to open /dev/zfs: Permission denied.\n",
     'nosnaplinux': "could not find any snapshots to destroy; check snapshot names.\n",
 }
-_FS_COMP='[a-zA-Z0-0\-_.]+'
+_FS_COMP='[a-zA-Z0-9\-_.]+'
 
 def get_pool_from_fsname(fsname):
     """Return the ZFS pool containing fsname
@@ -209,6 +209,16 @@ def _validate_poolname(poolname):
     if r == None:
         raise ZfsBadFsName(poolname)
 
+def _validate_snapname(snapname):
+    """Verify that the given snapshot name is valid
+
+    Raises a ZfsBadFsName if it's invalid
+    """
+    r = re.match('^' + _FS_COMP + '(/' + _FS_COMP + ')*@' + _FS_COMP + '$',
+                 snapname)
+    if r == None:
+        raise ZfsBadFsName(snapname)
+
 def zfs_snapshot(filesys, snapname, recursive=False):
     """Snapshot a ZFS filesystem
     """
@@ -225,6 +235,7 @@ def zfs_snapshot(filesys, snapname, recursive=False):
             'not sure how to handle snapname with %s' % type(snapname))
 
     fullsnapname="%s@%s" % (filesys, snapname)
+    _validate_snapname(fullsnapname)
     cmd.append(fullsnapname)
 
     p=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

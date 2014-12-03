@@ -461,25 +461,26 @@ For the delegated permission list, run: zfs allow|unallow
 
     def test_zfs_snapshot(self):
         """test zfs_snapshot of a new snapshot"""
+        snapname='zfs-auto-snap_daily-2014-11-22-0323'
         fake_p=flexmock(
             communicate = lambda: ('',''),
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', 'tank@foo'], env=util.ZFS_ENV,
+            ['zfs', 'snapshot', 'tank@%s' % snapname], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
-        r = util.zfs_snapshot('tank', 'foo')
+        r = util.zfs_snapshot('tank', snapname)
         assert_equal(r, None)
 
         # Now, with the recursive flag
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', '-r', 'tank@foo'], env=util.ZFS_ENV,
+            ['zfs', 'snapshot', '-r', 'tank@%s' % snapname], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
-        r = util.zfs_snapshot('tank', 'foo', True)
+        r = util.zfs_snapshot('tank', snapname, True)
         assert_equal(r, None)
 
     def test_get_pool_from_fsname(self):
