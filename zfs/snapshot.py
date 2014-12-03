@@ -91,6 +91,9 @@ class RollingSnapshotter():
 
             return
 
+        if isinstance(fsnames, basestring):
+            fsnames = [ fsnames ]
+
         if self.avoidsync == True:
             fsnames=filter_syncing_pools(fsnames)
 
