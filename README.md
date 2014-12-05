@@ -31,3 +31,9 @@ and unnecessary to use two copies running on the same machine. Try this syntax:
 
 the “-o -” puts mbuffer into file output mode, but then sends to stdout
 instead. Fancy!
+
+paramiko
+--------
+
+http://hackerific.net/2009/02/06/paramiko-scripting-ssh-with-python/
+http://www.paramiko.org/
