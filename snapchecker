@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 IFNAME=‘snaps’
 OFNAME=‘outfile’
+MAXDAYS=30
 
 snaps={}
 with open(IFNAME) as f:
@@ -41,9 +42,9 @@ for ds in snapkeys:
     ls = snaps[ds][-1]
     lsd = ls.replace('zfs-auto-snap_daily-','')
     dt=datetime.strptime(lsd, '%Y-%m-%d-%H%M')
-    d = timedelta(days=30)
+    d = timedelta(days=MAXDAYS)
     if datetime.now() - dt > d:
-        print "%s@%s is older than 30 days" % (ds,ls)
+        print "%s@%s is older than %n days" % (ds,ls,MAXDAYS)
 
 # Write out purgelist
 with open(OFNAME,’w’) as of:
