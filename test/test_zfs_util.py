@@ -502,13 +502,13 @@ For the delegated permission list, run: zfs allow|unallow
         # This should definitely raise a ZfsBadFsName
         assert_raises(ZfsBadFsName, zfs.util.get_pool_from_fsname, '/foo')
 
-    def test_get_zpool_guid(self):
+    def test_get_pool_guid(self):
         guid='16263632456085043332'
         myzfsutil=flexmock(zfs.util)
         myzfsutil.should_receive('zpool_list').with_args(
             properties=['name','guid'], pools='tank'
         ).and_return(iter([['tank', guid]]))
-        r = myzfsutil.get_zpool_guid('tank')
+        r = myzfsutil.get_pool_guid('tank')
         assert_equal(r, guid)
 
 

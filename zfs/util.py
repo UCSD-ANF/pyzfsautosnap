@@ -31,7 +31,7 @@ def get_pool_from_fsname(fsname):
     pool = fsname.split('/')[0]
     return pool
 
-def get_zpool_guid(pool):
+def get_pool_guid(pool):
     """Get the GUID of a zpool
 
     Convenience function to retrieve the GUID of a single zpool.
