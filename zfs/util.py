@@ -86,7 +86,7 @@ def zpool_list(pools=None, properties=None):
         else:
             raise subprocess.CalledProcessError(rc, cmd)
 
-    r=csv.reader(StringIO(out), delimiter="	")
+    r=csv.reader(StringIO(out), delimiter="\t")
 
     return r
 
@@ -140,7 +140,7 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
         else:
             raise subprocess.CalledProcessError(rc, cmd)
 
-    r=csv.reader(StringIO(out), delimiter="	")
+    r=csv.reader(StringIO(out), delimiter="\t")
 
     return r
 
