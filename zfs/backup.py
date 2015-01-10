@@ -2,10 +2,11 @@ import logging
 import os
 import sys
 import datetime
-from snapshot import PREFIX, USERPROP_NAME, get_userpropdatasets
+import paramiko
+from snapshot import PREFIX, USERPROP_NAME, get_userprop_datasets
 from util import get_pool_from_fsname, get_pool_guid
 
-class Backup():
+class Backup(object):
     def __init__(self, label, prefix=PREFIX, userprop_name=USERPROP_NAME ):
         self.label         = label
         self.prefix        = prefix
@@ -21,13 +22,20 @@ class Backup():
         pass
 
 class MbufferedSSHBackup(Backup):
-
-    def __init__(self, label, backup_host, backup_zpool, backup_user,
-                 prefix=PREFIX, userprop_name=USERPROP_NAME):
-        super(MbufferedSSHBackup, self).__init__(label, prefix, userprop_name)
+    def __init__(self, backup_host, backup_zpool, backup_user, **kwds):
+        super(MbufferedSSHBackup, self).__init__(**kwds)
         self.backup_host  = backup_host
         self.backup_zpool = backup_zpool
         self.backup_user  = backup_user
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh.connect(hostname=self.backup_host,
+                         username=self.backup_user,
+                         look_for_keys=False)
+        print 'self.label is :'
+        print self.label
+        print '\n'
+        print 'self.userprop_name is '+self.userprop_name+'\n'
 
     def take_backup(self, fsnames, snapchildren=False):
         """Back up a filesystem using the mbuffered SSH method
@@ -37,7 +45,7 @@ class MbufferedSSHBackup(Backup):
         incremental window
         """
 
-        if isisntance(fsnames, basestring) and fsnames == '//':
+        if isinstance(fsnames, basestring) and fsnames == '//':
             single_list,recursive_list = get_userprop_datasets(
                 label = self.label, userprop_name=self.userprop_name)
 
