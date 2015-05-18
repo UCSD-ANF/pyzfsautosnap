@@ -10,3 +10,6 @@
 [submodule "modules/epel"]
 	path = modules/epel
 	url = https://github.com/stahnma/puppet-module-epel.git
+[submodule "modules/zfsautosnap"]
+	path = modules/zfsautosnap
+	url = https://github.com/UCSD-ANF/puppet-zfsautosnap.git
