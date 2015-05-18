@@ -1,0 +1,12 @@
+[submodule "modules/zfsonlinux"]
+	path = modules/zfsonlinux
+	url = https://github.com/treydock/puppet-zfsonlinux.git
+[submodule "modules/stdlib"]
+	path = modules/stdlib
+	url = https://github.com/puppetlabs/puppetlabs-stdlib.git
+[submodule "modules/gpg_key"]
+	path = modules/gpg_key
+	url = https://github.com/treydock/puppet-gpg_key.git
+[submodule "modules/epel"]
+	path = modules/epel
+	url = https://github.com/stahnma/puppet-module-epel.git
