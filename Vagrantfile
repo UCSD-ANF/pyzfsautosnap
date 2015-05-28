@@ -4,7 +4,7 @@
 Vagrant.configure(2) do |config|
   config.vm.box = 'puppetlabs/centos-6.6-64-puppet'
 
-  config.vm.provision "puppet" do |puppet|
+  config.vm.provision "puppet", run: 'always' do |puppet|
     puppet.module_path = "modules"
   end
 
