@@ -37,3 +37,17 @@ paramiko
 
 http://hackerific.net/2009/02/06/paramiko-scripting-ssh-with-python/
 http://www.paramiko.org/
+
+Testing with Vagrant
+--------------------
+
+This package has some tests built in using the Vagrant virtual machine testing platform. Install vagrant from [vagrantup.com] and VirtualBox from [virtualbox.org], then:
+
+```
+git submodule update --init
+vagrant up
+```
+
+There are two VMs defined, `client` and `target`. The Client is configured with some test ZFS datasets preconfigured, while the Target is configured with a zpool called `zfsbackups`. This is intended to simulate the typical deployment environment.
+
+The VMs are provisioned with Puppet manifests. The intent is to test the Puppet `zfsbackups` module simultaneously with the actual Python code for taking and syncing snapshots.
