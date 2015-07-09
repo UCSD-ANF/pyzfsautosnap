@@ -6,6 +6,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.provision "puppet", run: 'always' do |puppet|
     puppet.module_path = "modules"
+    #puppet.options = '--verbose --debug'
   end
 
   config.vm.define 'client' do |clienthost|

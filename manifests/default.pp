@@ -17,6 +17,10 @@ node 'target.test.int' {
 }
 
 node 'client.test.int' {
+  # type doesn't set ensure by default
+  Zfs { ensure => 'present' }
+  Exec { path  => '/sbin:/bin:/usr/sbin:/usr/bin' }
+
   exec { 'create poolfile':
     command => '/bin/dd if=/dev/zero of=/clienttest-pool-file bs=1024 count=1024k',
     creates => '/clienttest-pool-file',
@@ -24,5 +28,58 @@ node 'client.test.int' {
   zpool { 'clienttest':
     ensure => present,
     disk   => '/clienttest-pool-file',
+  } ->
+  zfs { 'clienttest': }
+
+
+  # Puppet type doesn't handle spaces correctly
+  #zfs { 'clienttest/crap with spaces':
+  #  require => Zfs['clienttest'],
+  #}
+
+  zfs { 'clienttest/nodaily': }
+  #exec { 'zfs set com.sun:auto-snapshot=true clienttest/nodaily':
+  #  require      => Zfs['clienttest/nodaily'],
+  #  unless       => 'test "`zfs list -Ho com.sun:auto-snapshot clienttest/nodaily`" == "true"',
+  #}
+  site::zfsuserprop{ 'clienttest/nodaily auto-snap':
+    zfsdataset => 'clienttest/nodaily',
+    property   => 'com.sun:auto-snapshot',
+    value      => 'true',
+  }
+  site::zfsuserprop{ 'clienttest/nodaily auto-snap daily':
+    zfsdataset => 'clienttest/nodaily',
+    property   => 'com.sun:auto-snapshot:daily',
+    value      => 'false',
+  }
+  #exec { 'zfs set com.sun:auto-snapshot:daily=false clienttest/nodaily':
+  #  refreshonly => true,
+  #  subscribe   => Zfs['clienttest/nodaily'],
+  #}
+
+  zfs { 'clienttest/snapnorecurse': } ~>
+  exec { 'zfs set com.sun:auto-snapshot=true clienttest/snapnorecurse':
+    refreshonly => true,
+  }
+  zfs { 'clienttest/snapnorecurse/child1': } ~>
+  exec { 'zfs set com.sun:auto-snapshot=false clienttest/snapnorecurse/child1':
+    refreshonly => true,
+  }
+  zfs { 'clienttest/snapnorecurse/child2': } ~>
+  exec { 'zfs set com.sun:auto-snapshot=false clienttest/snapnorecurse/child2':
+    refreshonly => true,
+  }
+
+  zfs { 'clienttest/snaprecurse': } ~>
+  exec { 'zfs set com.sun:auto-snapshot=true clienttest/snaprecurse':
+    refreshonly => true,
+  }
+  zfs { 'clienttest/snaprecurse/child1': } ~>
+  exec { 'zfs inherit com.sun:auto-snapshot clienttest/snaprecurse/child1':
+    refreshonly => true,
+  }
+  zfs { 'clienttest/snaprecurse/child2': }
+  exec { 'zfs inherit com.sun:auto-snapshot clienttest/snaprecurse/child2':
+    refreshonly => true,
   }
 }
