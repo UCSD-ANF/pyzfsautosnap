@@ -38,6 +38,13 @@ paramiko
 http://hackerific.net/2009/02/06/paramiko-scripting-ssh-with-python/
 http://www.paramiko.org/
 
+Testing with nose
+-----------------
+
+You'll need the `nose` and `flexmock` Python modules installed
+
+Once those are installed, run the tests with `./runtests.sh`
+
 Testing with Vagrant
 --------------------
 
