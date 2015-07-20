@@ -41,6 +41,60 @@ def get_pool_guid(pool):
     s = r.next()
     return s[1]
 
+def _run_cmd(cmd, args, errorclass=ZfsCommandNotFoundError):
+    """Helper function to wrap subprocess
+
+    instanciates a subprocess object, and raises the specified errorclass if
+    the subprocess call raises an OSError with errno of 2 (ENOENT)
+    """
+    assert not isinstance(args, basestring)
+
+    cmdargs=[cmd]
+    if args[0] == cmd:
+        cmdargs.extend(args[1:])
+    else:
+        cmdargs.extend(args)
+
+    try:
+        p=subprocess.Popen(cmdargs, env=ZFS_ENV, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE)
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            raise errorclass()
+        else:
+            raise e
+
+    #return p
+    out,err=p.communicate()
+    rc=p.returncode
+    logging.debug('command %s returned result code %d' % (str([cmdargs]),rc))
+    return (out,err,rc)
+
+def _run_zpool(args):
+    """Helper function to run zpool under subprocess with the args specified
+
+    Returns the resulting subprocess object
+
+    Throws a ZpoolCommandNotFoundError if it can't find the zpool command
+    """
+    return _run_cmd('zpool', args, ZpoolCommandNotFoundError)
+
+def _run_zfs(args):
+    """Helper function to run zfs under subprocess with the args specified
+
+    Returns the resulting subprocess object
+
+    Throws a ZfsCommandNotFoundError if it can't find the zfs command
+    """
+    cmd='zfs'
+    out,err,rc = _run_cmd(cmd, args, ZfsCommandNotFoundError)
+    if rc > 0:
+        _check_perm_err(err)
+
+    return out,err,rc
+
+
+
 def zpool_list(pools=None, properties=None):
     """List the specified properties about Zpools
 
@@ -61,23 +115,19 @@ def zpool_list(pools=None, properties=None):
     csv.reader to read them. This occurs even if only out output field was
     requested, so be sure to expect something like ['foo'] instead of 'foo'
     """
-    cmd=['zpool', 'list', '-H' ]
+    args=['list', '-H' ]
     if properties is not None:
         cmd_columns=','.join(properties)
-        cmd.append('-o')
-        cmd.append(cmd_columns)
+        args.append('-o')
+        args.append(cmd_columns)
 
     if pools is not None:
         if isinstance(pools,basestring):
-            cmd.append(pools)
+            args.append(pools)
         else:
-            cmd.extend(pools)
+            args.extend(pools)
 
-    p=subprocess.Popen(cmd, env=ZFS_ENV, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    out,err=p.communicate()
-    rc=p.returncode
-    logging.debug('command %s returned result code %d' % (str(cmd),rc))
+    out,err,rc = _run_zpool(args)
 
     if rc > 0:
         _check_perm_err(err)
@@ -105,40 +155,29 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
     read them. This occurs even if only one output field was requested, so be
     sure to expect something like ['foo'] instead of 'foo'
     """
-    cmd=[ 'zfs', 'list', '-H' ]
+    args=[ 'list', '-H' ]
 
     if recursive == True:
-        cmd.append('-r')
+        args.append('-r')
 
     if types is not None:
         cmd_types=','.join(types)
-        cmd.append('-t')
-        cmd.append(cmd_types)
+        args.append('-t')
+        args.append(cmd_types)
 
     if sort is not None:
-        cmd.append('-s')
-        cmd.append(sort)
+        args.append('-s')
+        args.append(sort)
 
     if properties is not None:
         cmd_columns=','.join(properties)
-        cmd.append('-o')
-        cmd.append(cmd_columns)
+        args.append('-o')
+        args.append(cmd_columns)
 
     if ds is not None:
-        cmd.append(ds)
+        args.append(ds)
 
-    p=subprocess.Popen(cmd, env=ZFS_ENV, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    out,err=p.communicate()
-    rc=p.returncode
-    logging.debug('command %s returned result code %d' % (str(cmd),rc))
-
-    if rc > 0:
-        _check_perm_err(err)
-        if "dataset does not exist" in err:
-            raise ZfsNoDatasetError(err)
-        else:
-            raise subprocess.CalledProcessError(rc, cmd)
+    out,err,rc = _run_zfs(args)
 
     r=csv.reader(StringIO(out), delimiter="\t")
 
@@ -151,23 +190,20 @@ def zfs_destroy(dataset, recursive=False):
     child filesystems with the same name Note that the underlying command can
     only handle a single snapshot at a time.
     """
-    cmd = ['zfs', 'destroy']
+    args = ['destroy']
 
     if recursive==True:
-        cmd.append('-r')
+        args.append('-r')
 
     if dataset is None or dataset == '':
         raise ZfsArgumentError('dataset cannot be empty')
     if isinstance(dataset, basestring):
-        cmd.append(dataset)
+        args.append(dataset)
     else:
         raise ZfsArgumentError(
             'not sure how to handle dataset with %s' % type(dataset))
-    p=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       env=ZFS_ENV)
-    out,err=p.communicate()
-    rc=p.returncode
-    logging.debug('command %s returned result code %d' % (str(cmd),rc))
+
+    out,err,rc=_run_zfs(args)
 
     if rc > 0:
         _check_perm_err(err)
@@ -190,6 +226,9 @@ def _check_perm_err(errstring):
     """
     if errstring == ZFS_ERROR_STRINGS['permerr']:
         raise ZfsPermissionError(errno.EPERM, errstring, '/dev/zfs')
+
+    if "Failed to load ZFS module stack." in errstring:
+        raise ZfsPermissionError(errno.EPERM, errstring, 'Kernel module zfs.ko')
 
 def _validate_fsname(fsname):
     """Verify that the given fsname is a valid ZFS filesystem name
@@ -222,10 +261,10 @@ def _validate_snapname(snapname):
 def zfs_snapshot(filesys, snapname, recursive=False):
     """Snapshot a ZFS filesystem
     """
-    cmd = ['zfs', 'snapshot']
+    args = ['snapshot']
 
     if recursive==True:
-        cmd.append('-r')
+        args.append('-r')
 
     if not isinstance(filesys,basestring):
         raise ZfsArgumentError(
@@ -236,16 +275,11 @@ def zfs_snapshot(filesys, snapname, recursive=False):
 
     fullsnapname="%s@%s" % (filesys, snapname)
     _validate_snapname(fullsnapname)
-    cmd.append(fullsnapname)
+    args.append(fullsnapname)
 
-    p=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       env=ZFS_ENV)
-    out,err=p.communicate()
-    rc=p.returncode
-    logging.debug('command %s returned result code %d' % (str(cmd),rc))
+    out,err,rc=_run_zfs(args)
 
     if rc > 0:
-        _check_perm_err(err)
         if 'dataset already exists' in err:
             raise ZfsDatasetExistsError(errno.EEXIST, err, fullsnapname)
         elif 'dataset does not exist' in err:
@@ -253,7 +287,7 @@ def zfs_snapshot(filesys, snapname, recursive=False):
         elif 'permission denied' in err:
             raise ZfsPermissionError(errno.EPERM, err, filesys)
         else:
-            raise subprocess.CalledProcessError(rc, cmd)
+            raise subprocess.CalledProcessError(rc, [cmd] + args)
     pass
 
 def is_syncing(pool):
@@ -272,19 +306,15 @@ def zpool_status(pools=None):
     various fields in the status statement, and return them as a list of
     ZpoolStatus objects.
     """
-    cmd=[ 'zpool', 'status', '-v' ]
+    args=[ 'zpool', 'status', '-v' ]
 
     if pools is not None:
         if isinstance(pools,basestring):
-            cmd.append(pools)
+            args.append(pools)
         else:
-            cmd.extend(pools)
+            args.extend(pools)
 
-    p=subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       env=ZFS_ENV)
-    out,err=p.communicate()
-    rc=p.returncode
-    logging.debug('command %s returned result code %d' % (str(cmd),rc))
+    out,err,rc=_run_zpool(args)
 
     if rc > 0:
         _check_perm_err(err)

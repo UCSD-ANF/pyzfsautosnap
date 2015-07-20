@@ -1,4 +1,4 @@
-class ZfsOSError(OSError):
+class ZfsError(Exception):
     """Base OS Level Exception for ZFS problems
 
     Used for command execution issues with underlying ZFS commands, including
@@ -6,19 +6,31 @@ class ZfsOSError(OSError):
     """
     pass
 
-class ZfsNoDatasetError(ZfsOSError):
+class ZfsOSError(OSError):
+    """Special subclass of OSError for our class"""
+    pass
+
+class ZfsCommandNotFoundError(ZfsError):
+    """The zfs command is not available"""
+    pass
+
+class ZpoolCommandNotFoundError(ZfsError):
+    """The zpool command is not available"""
+    pass
+
+class ZfsNoDatasetError(ZfsError):
     """The dataset, filesystem, or snapshot does not exist"""
     pass
 
-class ZfsDatasetExistsError(ZfsOSError):
+class ZfsDatasetExistsError(ZfsError):
     """The dataset, filesystem, or snapshot already exists"""
     pass
 
-class ZfsNoPoolError(ZfsOSError):
+class ZfsNoPoolError(ZfsError):
     """The zpool does not exist"""
     pass
 
-class ZfsPoolExistsError(ZfsOSError):
+class ZfsPoolExistsError(ZfsError):
     """The zpool already exists"""
     pass
 
