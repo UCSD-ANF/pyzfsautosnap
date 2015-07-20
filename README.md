@@ -10,6 +10,10 @@ TODO
 ----
 * Add snapshot syncronization as client/server
 ** use mbuffer for the sync stuff, SSH wrapper or something for setup of stream
+** Refactor the utils module to use SSH via paramiko or direct commands on the localhost.
+*** refactor will need to implement a custom version of paramiko.client.SSHClient.exec_command() that also allows us to get the return code
+**** return code available from the transport object
+**** get transport from .SSHClient.get_transport()
 
 mbuffer
 -------
