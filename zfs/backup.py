@@ -53,7 +53,7 @@ class MbufferedSSHBackup(Backup):
                          ', '.join(single_list))
             single_state = self.take_backup(single_list, snap_children = False)
 
-            logging.info("Taking recursizve backups of: %s" %\
+            logging.info("Taking recursive backups of: %s" %\
                          ', '.join(recurive_list))
             recursive_state = self.take_backup(
                 recursive_list, snap_children = True)
