@@ -180,7 +180,11 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
     out,err,rc = _run_zfs(args)
 
     r=csv.reader(StringIO(out), delimiter="\t")
-
+    if rc > 0:
+        if "dataset does not exist" in err:
+            raise ZfsNoDatasetError(err)
+        else:
+            raise subprocess.CalledProcessError(rc, cmd)
     return r
 
 def zfs_destroy(dataset, recursive=False):
