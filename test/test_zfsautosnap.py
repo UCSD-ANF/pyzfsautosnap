@@ -2,7 +2,7 @@ from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
 from optparse import Values
 
-from zfsautosnap import App, main
+from zfs.zfsautosnap import App, main
 from zfs.snapshot import RollingSnapshotter
 
 def test_app():
