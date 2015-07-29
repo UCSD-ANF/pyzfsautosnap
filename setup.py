@@ -8,5 +8,5 @@ setup(
     author_email = "geoff@ucsd.edu",
     license = "BSD",
     packages=['zfs',],
-    scripts=['zfsautosnap',],
+    scripts=['zfsautosnap','zfspurgesnapshots'],
 )
