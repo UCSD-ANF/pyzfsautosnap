@@ -6,8 +6,8 @@ from nose.tools import raises, assert_raises, assert_equal
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-testexcludes=['tank/nodaily','tank/snapnorecurse','chile/rt']
-testreaderoutput=[
+TESTEXCLUDES=['tank/nodaily','tank/snapnorecurse','chile/rt']
+TESTREADEROUTPUT=[
     ['tank', '-', '-'],
     ['tank/crap with spaces', '-', '-'],
     ['tank/nodaily', '-', 'false'],
@@ -38,32 +38,32 @@ def test_can_recursive_snapshot():
     Tests multiple aspects of can_recursive_snapshot, including substrings
     """
     # Parent of an excluded ds should be false
-    r = zfssnapshot.can_recursive_snapshot('chile',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('chile',TESTEXCLUDES)
     assert_equal(r,False)
 
     # Non-excluded child ds of an excluded ds should be True
-    r = zfssnapshot.can_recursive_snapshot('chile/rt/chile',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('chile/rt/chile',TESTEXCLUDES)
     assert_equal(r,True)
 
     # Parent ds with excluded children should be False
-    r = zfssnapshot.can_recursive_snapshot('tank',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('tank',TESTEXCLUDES)
     assert_equal(r,False)
 
     # name that contains a non-recursive ds name
-    r = zfssnapshot.can_recursive_snapshot('tankety',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('tankety',TESTEXCLUDES)
     assert_equal(r,True)
 
     # name that's a substring of an excluded dataset
-    r = zfssnapshot.can_recursive_snapshot('tan',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('tan',TESTEXCLUDES)
     assert_equal(r,True)
 
     # name that's equal to a component of an excluded dataset
-    r = zfssnapshot.can_recursive_snapshot('rt',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('rt',TESTEXCLUDES)
     assert_equal(r,True)
 
     # excluded dataset should do something. Right now it's false,
     # but maybe it should raise an error?
-    r = zfssnapshot.can_recursive_snapshot('tank/nodaily',testexcludes)
+    r = zfssnapshot.can_recursive_snapshot('tank/nodaily',TESTEXCLUDES)
     assert_equal(r,False)
 
 def test_narrow_recursive_filesystems():
@@ -89,7 +89,7 @@ def test_get_userprop_datasets():
         properties=['name',
                     zfssnapshot.USERPROP_NAME,
                     zfssnapshot.SEP.join([zfssnapshot.USERPROP_NAME,'daily'])]
-    ).and_return(iter(testreaderoutput))
+    ).and_return(iter(TESTREADEROUTPUT))
     r = myzfssnapshot.get_userprop_datasets()
     single_list = ['tank/snapnorecurse']
     recursive_list = ['tank/snapnorecurse/child2', 'tank/snaprecurse']
@@ -108,7 +108,7 @@ def test_get_userprop_datasets_hourly():
         properties=['name',
                     zfssnapshot.USERPROP_NAME,
                     zfssnapshot.SEP.join([zfssnapshot.USERPROP_NAME,'hourly'])]
-    ).and_return(iter(testreaderoutput))
+    ).and_return(iter(TESTREADEROUTPUT))
     r = myzfssnapshot.get_userprop_datasets(label='hourly')
     assert r
 
