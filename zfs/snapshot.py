@@ -7,6 +7,7 @@ import datetime
 from . import *
 from util import (zfs_list, is_syncing, zfs_destroy, zfs_snapshot,
                   get_pool_from_fsname)
+from itertools import chain
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
@@ -115,6 +116,40 @@ class RollingSnapshotter():
             destroy_older_snapshots(fs, keep, self.label,
                                     self.prefix, snap_children)
         pass
+
+class SnapshotPurger(object):
+    """Recursively purge old snapshot
+
+    Given a starting dataset, purge the oldest snapshots of east child dataset,
+    keeping the specified newest snapshots around. This is useful on the zfs
+    snapshot receiver as a way to purge old snapshots. On client/source
+    systems, use the RollingSnapshotter class instead.
+    """
+
+    def __init__(self, label='daily', keep=KEEP['daily'], prefix=PREFIX,
+                 baseds='zfsbackups'):
+        validate_keep(keep)
+
+        self.keep  = keep
+        self.label  = label
+        self.prefix = prefix
+        self.baseds = baseds
+
+    def run(self):
+        datasets=get_child_datasets(self.baseds)
+        removed = [ destroy_older_snapshots( filesys=ds,
+                                            keep=self.keep,
+                                            label=self.label,
+                                            prefix=self.prefix,
+                                           ) for ds in datasets ]
+        nremoved = len([chain.from_iterable(removed)])
+        logging.info('Removed %d snapshots' % nremoved)
+        return 0
+
+def get_child_datasets(ds):
+    """get child datasets of the specified ds"""
+    return zfs_list(types=['filesystem'], properties=['NAME'], ds=baseds,
+                    recursive=True)[1:]
 
 def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
                             recursive=False):

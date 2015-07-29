@@ -32,6 +32,20 @@ def test_autosnapshotter():
     snapper=mocksnap.RollingSnapshotter(label="daily", keep=24)
     snapper.take_snapshot('//')
 
+def testSnapshotPurger():
+    """Test instanciation of the SnapshotPurger object"""
+    mocksnap = flexmock(zfssnapshot)
+    mocksnap.should_receive('get_child_datasets')\
+            .and_return([
+                'zfsbackups/123',
+                'zfsbackups/123/abc',
+            ])
+    mocksnap.should_receive('destroy_older_snapshots')\
+            .and_return(['zfsbackups/123@zfs-auto-snap-daily'])\
+            .and_return(['zfsbackups/123/abc@zfs-auto-snap-daily'])
+    t=mocksnap.SnapshotPurger()
+    t.run()
+
 def test_can_recursive_snapshot():
     """ test can_recursive snapshot
 
