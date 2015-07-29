@@ -51,11 +51,11 @@ class App(object):
 
         ret = 0
 
-        snapper=SnapshotPurger(label=self.options.label,
+        purger=SnapshotPurger(label=self.options.label,
                                keep=self.options.keep,
                                baseds=self.options.dataset)
         try:
-            snapper.run(self.options.dataset)
+            purger.run()
         except ZfsDatasetExistsError as e:
             logging.critical(e)
             ret=1
