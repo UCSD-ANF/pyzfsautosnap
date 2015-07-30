@@ -3,7 +3,6 @@ import datetime
 from . import *
 from util import (zfs_list, is_syncing, zfs_destroy, zfs_snapshot,
                   get_pool_from_fsname)
-from itertools import chain
 
 PREFIX="zfs-auto-snap"
 USERPROP_NAME='com.sun:auto-snapshot'
@@ -132,14 +131,15 @@ class SnapshotPurger(object):
         self.baseds = baseds
 
     def run(self):
-        datasets=get_child_datasets(self.baseds)
+        datasets=[ds[0] for ds in get_child_datasets(self.baseds)]
         removed = [ destroy_older_snapshots( filesys=ds,
                                             keep=self.keep,
                                             label=self.label,
                                             prefix=self.prefix,
                                            ) for ds in datasets ]
-        nremoved = len([chain.from_iterable(removed)])
+        nremoved = len([x for y in removed for x in y])
         logging.info('Removed %d snapshots' % nremoved)
+        logging.info(removed)
         return 0
 
 def get_child_datasets(ds):
@@ -178,7 +178,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     rs = [x[0] for x in r if x[0][:len(snappre)] == snappre]
 
     to_remove=rs[keep:]
-    removed=0
+    removed=[]
     logging.debug(
         "Should remove %d of %d snapshots for filesys %s (keep=%d)" % (
         len(to_remove), len(rs), filesys, keep))
@@ -189,7 +189,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
         except (ZfsOSError) as e:
             logger.warning('Unable to destroy %s' % snapshot)
         else:
-            removed+=1
+            removed.extend(snapshot)
 
     return removed
 

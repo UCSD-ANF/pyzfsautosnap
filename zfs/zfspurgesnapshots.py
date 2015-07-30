@@ -78,12 +78,14 @@ def main(args=None):
     if args is None:
         args = sys.argv
 
-    op = OptionParser(usage='usage: %prog [options] label keep')
+    op = OptionParser(usage='usage: %prog [options] basedataset label keep')
     op.add_option('-v', '--verbose', dest='verbose', action='store_true')
     (options,args) = op.parse_args(args[1:])
-    if len(args) != 2:
-        op.error('Not enough arguments provided')
-    (options.label,options.keep)=args
+    if len(args) != 3:
+        op.error('wrong number of arguments provided')
+    (options.dataset,options.label,options.keep)=args
+    if not options.dataset:
+        op.error('base dataset not provided')
     if not options.label:
         op.error('label not provided')
     if not options.keep:

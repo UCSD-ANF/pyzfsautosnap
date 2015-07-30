@@ -175,6 +175,7 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
         args.append(cmd_columns)
 
     if ds is not None:
+        assert isinstance(ds,basestring)
         args.append(ds)
 
     out,err,rc = _run_zfs(args)
