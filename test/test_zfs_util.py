@@ -1,12 +1,9 @@
-import logging
-import sys
 import subprocess
-from subprocess import Popen, PIPE, CalledProcessError
+from subprocess import PIPE
 import zfs.util
 from flexmock import flexmock
 from nose.tools import raises, assert_raises, assert_equal
 from zfs import *
-import StringIO
 
 class Test:
     """
@@ -190,6 +187,22 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         line = r.next()
         assert line[0] == 'tank'
         assert len(line) == 5
+
+    @raises(ZfsInvalidPropertyError)
+    def test_zfs_list_with_bad_propname(self):
+        """test zfs_list with bad property name"""
+        errstring="""bad property list: invalid property 'NAME'
+For more info, run: zfs help list"""
+        fake_p=flexmock(
+            communicate=lambda: (self.mockedoutnoargs, errstring),
+            returncode=1)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['zfs', 'list', '-H', '-t', 'filesystem,volume', '-o', 'NAME'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return(fake_p)
+        r = util.zfs_list(properties=['NAME'])
+
 
     def test_zfs_list_with_existing_ds(self):
         """

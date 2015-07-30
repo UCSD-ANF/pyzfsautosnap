@@ -30,6 +30,10 @@ class ZfsDatasetExistsError(ZfsError):
     """The dataset, filesystem, or snapshot already exists"""
     pass
 
+class ZfsInvalidPropertyError(ValueError):
+    """The specified property does not exist"""
+    pass
+
 class ZfsNoPoolError(ZfsError):
     """The zpool does not exist"""
     pass

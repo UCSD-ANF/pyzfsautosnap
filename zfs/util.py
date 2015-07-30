@@ -113,7 +113,10 @@ def zpool_list(pools=None, properties=None):
     """
     args=['list', '-H' ]
     if properties is not None:
-        cmd_columns=','.join(properties)
+        if isinstance(properties, basestring):
+            cmd_columns=properties
+        else:
+            cmd_columns=','.join(properties)
         args.append('-o')
         args.append(cmd_columns)
 
@@ -127,6 +130,7 @@ def zpool_list(pools=None, properties=None):
 
     if rc > 0:
         _check_perm_err(err)
+        _check_prop_err(err)
         if "no such pool" in err:
             raise ZfsNoPoolError(err)
         else:
@@ -177,6 +181,7 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
 
     r=csv.reader(StringIO(out), delimiter="\t")
     if rc > 0:
+        _check_prop_err(err)
         if "dataset does not exist" in err:
             raise ZfsNoDatasetError(err)
         else:
@@ -229,6 +234,11 @@ def _check_perm_err(errstring):
 
     if "Failed to load ZFS module stack." in errstring:
         raise ZfsPermissionError(errno.EPERM, errstring, 'Kernel module zfs.ko')
+
+def _check_prop_err(errstring):
+    """Check if the errstring is a zfs invalid property error"""
+    if 'bad property list: invalid property' in errstring:
+        raise ZfsInvalidPropertyError(errstring)
 
 def _validate_fsname(fsname):
     """Verify that the given fsname is a valid ZFS filesystem name
