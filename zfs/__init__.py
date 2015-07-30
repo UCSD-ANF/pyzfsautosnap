@@ -6,6 +6,10 @@ class ZfsError(Exception):
     """
     pass
 
+class ZfsUnknownError(ZfsError):
+    """An unknown error occurred running a zfs command"""
+    pass
+
 class ZfsOSError(OSError):
     """Special subclass of OSError for our class"""
     pass

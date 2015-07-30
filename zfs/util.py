@@ -1,11 +1,7 @@
 import logging
-import os
-import sys
 import subprocess
 import re
-import datetime
 import csv
-import collections
 import errno
 from . import *
 from StringIO import StringIO
@@ -134,7 +130,7 @@ def zpool_list(pools=None, properties=None):
         if "no such pool" in err:
             raise ZfsNoPoolError(err)
         else:
-            raise subprocess.CalledProcessError(rc, cmd)
+            raise ZfsUnknownError(err)
 
     r=csv.reader(StringIO(out), delimiter="\t")
 
@@ -184,7 +180,7 @@ def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
         if "dataset does not exist" in err:
             raise ZfsNoDatasetError(err)
         else:
-            raise subprocess.CalledProcessError(rc, cmd)
+            raise ZfsUnknownError(err)
     return r
 
 def zfs_destroy(dataset, recursive=False):
@@ -217,7 +213,7 @@ def zfs_destroy(dataset, recursive=False):
         elif 'permission denied' in err:
             raise ZfsPermissionError(errno.EPERM, err, dataset)
         else:
-            raise subprocess.CalledProcessError(rc, cmd)
+            raise ZfsUnknownError(err)
 
     pass
 
@@ -291,7 +287,7 @@ def zfs_snapshot(filesys, snapname, recursive=False):
         elif 'permission denied' in err:
             raise ZfsPermissionError(errno.EPERM, err, filesys)
         else:
-            raise subprocess.CalledProcessError(rc, [cmd] + args)
+            raise ZfsUknownError(err)
     pass
 
 def is_syncing(pool):
@@ -325,6 +321,6 @@ def zpool_status(pools=None):
         if "no such pool" in err:
             raise ZfsNoPoolError(err)
         else:
-            raise subprocess.CalledProcessError(rc, cmd)
+            raise ZfsUnknownError(err)
 
     return out
