@@ -148,7 +148,7 @@ def get_child_datasets(ds):
                     recursive=True)
 
 def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
-                            recursive=False):
+                            recursive=False, dryrun=False):
     """Destroy old snapshots, keeping 'keep' newest around.
 
     Given a filesystem name, the number of snapshots we want to keep, along
@@ -162,7 +162,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     Note that unlike the original ksh function, we actually keep around the
     requested number of snapshots, rather than "keep - 1".
 
-    Returns the number of snapshots removed.
+    Returns a list containing all of the snapshots removed
     """
 
     if keep == 'all':
@@ -182,6 +182,11 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     logging.debug(
         "Should remove %d of %d snapshots for filesys %s (keep=%d)" % (
         len(to_remove), len(rs), filesys, keep))
+
+    # return early if this is a dryrun
+    if dryrun:
+        return to_remove
+
     for snapshot in to_remove:
         try:
             zfs_destroy(snapshot, recursive=recursive)
