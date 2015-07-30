@@ -144,7 +144,7 @@ class SnapshotPurger(object):
 
 def get_child_datasets(ds):
     """get child datasets of the specified ds"""
-    return zfs_list(types=['filesystem'], properties=['NAME'], ds=ds,
+    return zfs_list(types=['filesystem'], properties=['name'], ds=ds,
                     recursive=True)[1:]
 
 def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
