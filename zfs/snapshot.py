@@ -166,18 +166,26 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     """
 
     if keep == 'all':
-        return 0
+        return None
 
     snappre="%s@%s_%s-" % (filesys, prefix, label)
-    r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
-                 ds=filesys, recursive=True)
+    try:
+        r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
+                     ds=filesys, recursive=True)
+    except zfs.ZfsNoDatasetError as e:
+        logging.warning(e)
+        return None
 
     logging.debug("Subsetting for snapshots starting with %s" % snappre)
     # Remove all snapshots for child filesystems and those that aren't for
     # our given label
     rs = [x[0] for x in r if x[0][:len(snappre)] == snappre]
 
-    to_remove=rs[keep:]
+    logging.debug("All snapshots matching %s for %s: %s" % (snappre, filesys,
+                                                            rs))
+    to_remove=list(reversed(rs))[keep:]
+    # reverse to_remove again to delete the oldest ones first
+    to_remove=list(reversed(to_remove))
     removed=[]
     logging.debug(
         "Should remove %d of %d snapshots for filesys %s (keep=%d)" % (
@@ -194,7 +202,7 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
         except (ZfsOSError) as e:
             logger.warning('Unable to destroy %s' % snapshot)
         else:
-            removed.extend(snapshot)
+            removed.append(snapshot)
 
     return removed
 
