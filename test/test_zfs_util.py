@@ -289,7 +289,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-r', '-d', '1', '-t', 'filesystem,volume', 'tank'],
+            [ 'zfs', 'list', '-H', '-d', '1', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
