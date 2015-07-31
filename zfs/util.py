@@ -402,53 +402,49 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
 # The local command runner object, used for the functional methods
 _LCR=LocalZfsCommandRunner()
 
-def zpool_list(pools=None, properties=None):
+def zpool_list(*args, **kwargs):
     """List the specified properties about Zpools
 
-    Run the zpool list command, optionally retrieving only the specified
-    properties. If no pool is provided, the zpool list default behavior of
-    listing all zpools is used.
-
-    If no properties are provided, the zpool default columns are used. This
-    varies by platform and implementation, but typically looks like:
-        NAME, SIZE, ALLOC, FREE, CAP, DEDUP, HEALTH, ALTROOT
-
-    Note that support for listing the individual vdev properties under the
-    zpool (the -v option to zpool list) is not supported at this time.
-
-    Returns an iterable of lists with each requested property occupying one
-    field of the list. This is performed under the hood by relying on the -H
-    option to output a tab-delimited field of properties, and calling the
-    csv.reader to read them. This occurs even if only out output field was
-    requested, so be sure to expect something like ['foo'] instead of 'foo'
+    See :py:func:`ZfsCommandRunner.zpool_list` for details.
     """
-    return _LCR.zpool_list(pools, properties)
+    return _LCR.zpool_list(*args, **kwargs)
 
 
-def zfs_list(types=['filesystem','volume'], sort=None, properties=None,
-             ds=None, recursive=False):
+def zfs_list(*args, **kwargs):
     """List the specified properties about Zfs datasets
 
-    Run the zfs list command, optionally retrieving only the specified
-    properties. If no ds is provided, the zfs list default behavior of
-    recursively listing all filesystems and snapshots is used.
+    See :py:func:`ZfsCommandRunner.zfs_list` for details.
 
-    Returns an iterable of lists with each field occupying one field of the
-    list. This is performed under the hood by relying on the -H option to
-    output a tab-delimited field of properties, and calling the csv.reader to
-    read them. This occurs even if only one output field was requested, so be
-    sure to expect something like ['foo'] instead of 'foo'
     """
-    return _LCR.zfs_list(types, sort, properties, ds, recursive)
+    return _LCR.zfs_list(*args, **kwargs)
 
-def zfs_destroy(dataset, recursive=False):
+def zfs_destroy(*args, **kwargs):
     """Destroy a dataset or snapshot
 
-    Calls the zfs destroy command, optionally recursively removing snapshots of
-    child filesystems with the same name Note that the underlying command can
-    only handle a single snapshot at a time.
+    See :py:func:`ZfsCommandRunner.zfs_destroy` for details.
     """
-    return _LCR.zfs_destroy(dataset, recursive)
+    return _LCR.zfs_destroy(*args, **kwargs)
+
+def zfs_snapshot(*args, **kwargs):
+    """Snapshot a ZFS filesystem
+
+    See :py:func:`ZfsCommandRunner.zfs_snapshot` for details.
+    """
+    return _LCR.zfs_snapshot(*args, **kwargs)
+
+def is_syncing(*args, **kwargs):
+    """Check if the named pool is currently scrubbing or resilvering
+
+    See :py:func:`ZfsCommandRunner.is_syncing` for details.
+    """
+    return _LCR.is_syncing(*args, **kwargs)
+
+def zpool_status(*args, **kwargs):
+    """Call zpool status to check the status of a zpool
+
+    See :py:func:`ZfsCommandRunner.zpool_status` for details.
+    """
+    return _LCR.zpool_status(*args, **kwargs)
 
 def _check_perm_err(errstring):
     """Check if the error string is a /dev/zfs permission error
@@ -495,24 +491,3 @@ def _validate_snapname(snapname):
                  snapname)
     if r == None:
         raise ZfsBadFsName(snapname)
-
-def zfs_snapshot(filesys, snapname, recursive=False):
-    """Snapshot a ZFS filesystem
-    """
-    return _LCR.zfs_snapshot(filesys, snapname, recursive)
-
-def is_syncing(pool):
-    """Check if the named pool is currently scrubbing or resilvering
-    """
-    return _LCR.is_syncing(pool)
-
-def zpool_status(pools=None):
-    """Call zpool status to check the status of a zpool
-
-    Currently just returns the raw text output of the zpool status command.  It
-    might be worth the time to attempt to parse the big blob of text into the
-    various fields in the status statement, and return them as a list of
-    ZpoolStatus objects.
-    """
-    return _LCR.zpool_status(pools)
-
