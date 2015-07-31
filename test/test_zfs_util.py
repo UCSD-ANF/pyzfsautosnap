@@ -91,9 +91,9 @@ tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
         assert_equal(line[0], 'tank')
         assert_equal(len(line),7)
 
-    def test_zpool_list_with_existing_ds(self):
+    def test_zpool_list_with_existing_pool(self):
         """
-        test zpool_list with a dataset that exists
+        test zpool_list with a pool that exists
         """
         fake_p=flexmock(
             communicate=lambda: ("tank\t3.62T\t3.91G\t0%\t1.00x\tONLINE\t-\n",
@@ -204,7 +204,7 @@ For more info, run: zfs help list"""
         r = util.zfs_list(properties=['NAME'])
 
 
-    def test_zfs_list_with_existing_ds(self):
+    def test_zfs_list_with_existing_dataset(self):
         """
         test zfs_list with a dataset that exists
         """
@@ -217,13 +217,13 @@ For more info, run: zfs help list"""
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
-        r = util.zfs_list(ds='tank')
+        r = util.zfs_list(dataset='tank')
         assert r
         line = r.next()
         assert_equal(line[0],'tank')
         assert_equal(len(line), 5)
 
-    def test_zfs_list_with_existing_ds_recursive(self):
+    def test_zfs_list_with_existing_dataset_recursive(self):
         """
         test zfs_list with a dataset that exists and recurse
         """
@@ -236,7 +236,7 @@ For more info, run: zfs help list"""
             [ 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
-        r = util.zfs_list(ds='tank',recursive=True)
+        r = util.zfs_list(dataset='tank',recursive=True)
         assert r
         line = r.next()
         assert_equal(line[0],'tank')
@@ -244,7 +244,7 @@ For more info, run: zfs help list"""
 
 
     @raises(ZfsNoDatasetError)
-    def test_zfs_list_with_nonexistent_ds(self):
+    def test_zfs_list_with_nonexistent_dataset(self):
         """
         test zfs_list with a non-existent dataset
         """
@@ -258,7 +258,7 @@ For more info, run: zfs help list"""
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
-        r = util.zfs_list(ds='failboat')
+        r = util.zfs_list(dataset='failboat')
 
     @raises(ZfsNoPoolError)
     def test_zpool_status_with_nonexistent_pool(self):

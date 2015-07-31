@@ -61,16 +61,16 @@ class ZfsCommandRunner(object):
         """
         raise NotImplementedError
 
-    def run_zpool(self, args):
+    def run_zpool(self, zpoolargs):
         """Helper function to run zpool under subprocess with the args specified
 
         Returns the resulting subprocess.Popen-like object
 
         Throws a ZpoolCommandNotFoundError if it can't find the zpool command
         """
-        return self.run_cmd('zpool', args, ZpoolCommandNotFoundError)
+        return self.run_cmd('zpool', zpoolargs, ZpoolCommandNotFoundError)
 
-    def run_zfs(self, args):
+    def run_zfs(self, zfsargs):
         """Helper function to run zfs under subprocess with the args specified
 
         Returns the resulting subprocess.Popen-like object
@@ -78,7 +78,7 @@ class ZfsCommandRunner(object):
         Throws a ZfsCommandNotFoundError if it can't find the zfs command
         """
         cmd='zfs'
-        out,err,rc = self.run_cmd(cmd, args, ZfsCommandNotFoundError)
+        out,err,rc = self.run_cmd(cmd, zfsargs, ZfsCommandNotFoundError)
         if rc > 0:
             _check_perm_err(err)
 
@@ -135,12 +135,12 @@ class ZfsCommandRunner(object):
         return r
 
 
-    def zfs_list(self, ds=None, types=['filesystem','volume'], sort=None,
+    def zfs_list(self, dataset=None, types=['filesystem','volume'], sort=None,
                  properties=None, recursive=False):
         """List the specified properties about Zfs datasets
 
         Run the zfs list command, optionally retrieving only the specified
-        properties. If no ds is provided, the zfs list default behavior of
+        properties. If no dataset is provided, the zfs list default behavior of
         recursively listing all filesystems and snapshots is used.
 
         Returns an iterable of lists with each field occupying one field of the
@@ -168,9 +168,9 @@ class ZfsCommandRunner(object):
             args.append('-o')
             args.append(cmd_columns)
 
-        if ds is not None:
-            assert isinstance(ds,basestring)
-            args.append(ds)
+        if dataset is not None:
+            assert isinstance(dataset,basestring)
+            args.append(dataset)
 
         out,err,rc = self.run_zfs(args)
 
@@ -219,7 +219,7 @@ class ZfsCommandRunner(object):
 
         pass
 
-    def zfs_snapshot(self, filesys, snapname, recursive=False):
+    def zfs_snapshot(self, dataset, snapname, recursive=False):
         """Snapshot a ZFS filesystem
         """
         args = ['snapshot']
@@ -227,14 +227,14 @@ class ZfsCommandRunner(object):
         if recursive==True:
             args.append('-r')
 
-        if not isinstance(filesys,basestring):
+        if not isinstance(dataset, basestring):
             raise ZfsArgumentError(
                 'not sure how to handle filesys with %s' % type(filesys))
-        if not isinstance(snapname,basestring):
+        if not isinstance(snapname, basestring):
             raise ZfsArgumentError(
                 'not sure how to handle snapname with %s' % type(snapname))
 
-        fullsnapname="%s@%s" % (filesys, snapname)
+        fullsnapname="%s@%s" % (dataset, snapname)
         _validate_snapname(fullsnapname)
         args.append(fullsnapname)
 
@@ -244,9 +244,9 @@ class ZfsCommandRunner(object):
             if 'dataset already exists' in err:
                 raise ZfsDatasetExistsError(errno.EEXIST, err, fullsnapname)
             elif 'dataset does not exist' in err:
-                raise ZfsNoDatasetError(errno.ENOENT, err, filesys)
+                raise ZfsNoDatasetError(errno.ENOENT, err, dataset)
             elif 'permission denied' in err:
-                raise ZfsPermissionError(errno.EPERM, err, filesys)
+                raise ZfsPermissionError(errno.EPERM, err, dataset)
             else:
                 raise ZfsUknownError(err)
         pass
@@ -287,7 +287,7 @@ class ZfsCommandRunner(object):
         return out
 
     @staticmethod
-    def process_cmd_args(cmd,args):
+    def process_cmd_args(cmd, args):
         """Process the cmd and args, returning a cmdargs array
 
         Utility function for implementing a run method in a subclass
