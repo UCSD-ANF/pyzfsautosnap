@@ -13,7 +13,13 @@ def validate_keep(keep):
     """validates the value of the keep parameter
 
     If it's not coercable to an int or equal to the special string values,
-    raise a ValueError. Otherwise, return keep.
+    raise a ValueError. Otherwise, return `keep`.
+
+    :param keep: value to validate
+    :type keep: int or str
+    :return: the validated value of keep
+    :rtype: either an int or the special value 'all'
+    :raises TypeError: if `keep` can't be coerced to an int
     """
     if keep != 'all':
         keep=int(keep)
