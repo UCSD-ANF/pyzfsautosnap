@@ -135,8 +135,8 @@ class ZfsCommandRunner(object):
         return r
 
 
-    def zfs_list(self, types=['filesystem','volume'], sort=None, properties=None,
-                 ds=None, recursive=False):
+    def zfs_list(self, ds=None, types=['filesystem','volume'], sort=None,
+                 properties=None, recursive=False):
         """List the specified properties about Zfs datasets
 
         Run the zfs list command, optionally retrieving only the specified
