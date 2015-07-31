@@ -14,6 +14,7 @@ ZFS_ERROR_STRINGS={
     'permerr': "Unable to open /dev/zfs: Permission denied.\n",
     'nosnaplinux': "could not find any snapshots to destroy; check snapshot names.\n",
 }
+ZFS_CMDS=['zpool', 'zfs']
 _FS_COMP='[a-zA-Z0-9\-_.]+'
 
 def get_pool_from_fsname(fsname):
@@ -22,7 +23,10 @@ def get_pool_from_fsname(fsname):
     Given a ZFS filesystem, return which pool contains it. This is usually
     the part of the filesystem before the first forward slash.
 
-    If the fsname is malformed, raise a ZfsBadFsName exeception
+    :param str fsname: name of a ZFS filesystem
+    :raises ZfsBadFsName: if the fsname is malformed
+    :return: the name of the zpool containing fsname
+    :rtype: str
     """
     _validate_fsname(fsname)
     pool = fsname.split('/')[0]
@@ -31,7 +35,11 @@ def get_pool_from_fsname(fsname):
 def get_pool_guid(pool):
     """Get the GUID of a zpool
 
-    Convenience function to retrieve the GUID of a single zpool.
+    :param str pool: the name of the Zpool
+    :return: the GUID of the pool
+    :rtype: str
+    :raises ZfsBadPoolName: if the pool name is malformed
+    :raises ZfsNoPoolError: if the pool does not exist
     """
     _validate_poolname(pool)
     r = zpool_list(pools=pool, properties=['name','guid'])
@@ -45,7 +53,7 @@ class ZfsCommandRunner(object):
 
     def run_cmd(self, cmd, args, errorclass=None):
         """Base method to run a command ZFS command.
-        This should be overridden by subclasses
+        This must be overridden by subclasses
 
         The idea is that this command sets up whatever environment is necessary
         to run a zfs or zpool command, including setting up the environment,
@@ -58,24 +66,35 @@ class ZfsCommandRunner(object):
 
         A subclass implementation should use ZfsCommandRunner.process_cmd_args
         to validate the cmd and args parameters.
+
+        :param str cmd: The zfs command to run
+        :param args: Arguments to the zfs command
+        :param errorclass: the exeception that should be raised if the command
+        is not found
+        :type errorclass: Execption or None
+        :raises NotImplementedError: this method must be overridden
+        :return: A tuple containing the output, error output, and result code
+        :rtype: tuple
         """
         raise NotImplementedError
 
     def run_zpool(self, zpoolargs):
-        """Helper function to run zpool under subprocess with the args specified
+        """run zpool with the args specified
 
-        Returns the resulting subprocess.Popen-like object
-
-        Throws a ZpoolCommandNotFoundError if it can't find the zpool command
+        :param list zpoolargs: The arguments to the zpool command
+        :raises ZpoolCommandNotFoundError: if it can't find the zpool command
+        :return: A tuple containing the outpet, error output, and result code
+        :rtype: tuple
         """
         return self.run_cmd('zpool', zpoolargs, ZpoolCommandNotFoundError)
 
     def run_zfs(self, zfsargs):
-        """Helper function to run zfs under subprocess with the args specified
+        """run zfs with the args specified
 
-        Returns the resulting subprocess.Popen-like object
-
-        Throws a ZfsCommandNotFoundError if it can't find the zfs command
+        :param list zpoolargs: The arguments to the zpool command
+        :raises ZfsCommandNotFoundError: if it can't find the zfs command
+        :return: A tuple containing the outpet, error output, and result code
+        :rtype: tuple
         """
         cmd='zfs'
         out,err,rc = self.run_cmd(cmd, zfsargs, ZfsCommandNotFoundError)
@@ -85,25 +104,29 @@ class ZfsCommandRunner(object):
         return out,err,rc
 
     def zpool_list(self, pools=None, properties=None):
-        """List the specified properties about Zpools
+        """List the specified properties about a pool or pools
 
         Run the zpool list command, optionally retrieving only the specified
         properties. If no pool is provided, the zpool list default behavior of
         listing all zpools is used.
 
         If no properties are provided, the zpool default columns are used. This
-        varies by platform and implementation, but typically looks like: NAME,
-        SIZE, ALLOC, FREE, CAP, DEDUP, HEALTH, ALTROOT
+        varies by platform and implementation, but typically looks like: `name`,
+        `size`, `alloc`, `free`, `cap`, `dedup`, `health`, `altroot`
 
         Note that support for listing the individual vdev properties under the
         zpool (the -v option to zpool list) is not supported at this time.
 
-        Returns an iterable of lists with each requested property occupying one
-        field of the list. This is performed under the hood by relying on the
-        -H option to output a tab-delimited field of properties, and calling
-        the csv.reader to read them. This occurs even if only out output field
-        was requested, so be sure to expect something like ['foo'] instead of
-        'foo'
+        :param pools: name of pool or pools to check
+        :type pools: list or str
+        :param list properties: the properties to retrieve
+        :return: `iterable` of `list`s with each requested property occupying
+        one field of the list. This is performed under the hood by relying on
+        the -H option to output a tab-delimited field of properties, and
+        calling the csv.reader to read them. This occurs even if only out
+        output field was requested, so be sure to expect something like ['foo']
+        instead of 'foo'
+        :rtype: iterable
         """
         args=['list', '-H' ]
         if properties is not None:
@@ -135,24 +158,55 @@ class ZfsCommandRunner(object):
         return r
 
 
-    def zfs_list(self, dataset=None, types=['filesystem','volume'], sort=None,
-                 properties=None, recursive=False):
-        """List the specified properties about Zfs datasets
+    def zfs_list(self, datasets=None, types=['filesystem','volume'],
+                 properties=None, sort=None, sortorder='asc', recursive=False,
+                 depth=None):
+        """List the specified properties about a ZFS dataset or datasets
 
         Run the zfs list command, optionally retrieving only the specified
         properties. If no dataset is provided, the zfs list default behavior of
         recursively listing all filesystems and snapshots is used.
 
-        Returns an iterable of lists with each field occupying one field of the
-        list. This is performed under the hood by relying on the -H option to
-        output a tab-delimited field of properties, and calling the csv.reader
-        to read them. This occurs even if only one output field was requested,
-        so be sure to expect something like ['foo'] instead of 'foo'
+        :param datasets: the dataset or datasets to check
+        :type datasets: str, list, or None
+        :param list types: dataset types to display, valid choices are
+        `filesystem`, `snapshot`, `snap`, `volume`, `bookmark`, or `all`
+        :param properties:
+        :param sort: A property for sorting the output by column based on the
+        value of the property. The `sortorder` param is used to determine which
+        order to use when sorting.
+        :type sort: str or None
+        :param str sortorder: either "asc" or "desc" for ascending or
+        descending order
+        :param bool recursive: if true, list details about the children of the
+        `datasets`
+        :param depth: if specified, limits the recursion level of `dataset`
+        listing. A value of 1 limits the listing to just the specified
+        `datasets` and their immediate children. Note: this parameter may not
+        be supported on all platforms.
+        :depth type: int or None
+        :return: an `iterable` of `list`s with each of the specified `field`
+        entries occupying one field of the list. This is performed under the
+        hood by relying on the `zfs list -H` option to output a tab-delimited
+        field of properties, and calling `csv.reader` to read them. This occurs
+        even if only one output field was requested, so be sure to expect
+        something like ['foo'] instead of 'foo'
+        :rtype: iter
+        :raise TypeError: if a parameter is of the wrong type
+        :raise ValueError: if a parameter has an unexpected value
         """
+        SORTORDERS={'asc': '-s',
+                    'desc': '-S',
+                   }
         args=[ 'list', '-H' ]
 
+        if not isinstance(recursive, bool):
+            raise TypeError('recursive must be a boolean')
         if recursive == True:
             args.append('-r')
+            if depth != None:
+                args.append('-d')
+                args.append(str(depth))
 
         if types is not None:
             cmd_types=','.join(types)
@@ -160,7 +214,10 @@ class ZfsCommandRunner(object):
             args.append(cmd_types)
 
         if sort is not None:
-            args.append('-s')
+            if sortorder not in SORTORDERS.keys():
+                raise ValueError('sort order must be one of: %s' %
+                                 SORTORDERS.keys())
+            args.append(SORTORDERS[sortorder])
             args.append(sort)
 
         if properties is not None:
@@ -168,9 +225,11 @@ class ZfsCommandRunner(object):
             args.append('-o')
             args.append(cmd_columns)
 
-        if dataset is not None:
-            assert isinstance(dataset,basestring)
-            args.append(dataset)
+        if datasets is not None:
+            if isinstance(datasets, basestring):
+                args.append(datasets)
+            else:
+                args.extend(datasets)
 
         out,err,rc = self.run_zfs(args)
 
@@ -183,27 +242,35 @@ class ZfsCommandRunner(object):
                 raise ZfsUnknownError(err)
         return r
 
-    def zfs_destroy(self, dataset, recursive=False):
-        """Destroy a dataset or snapshot
+    def zfs_destroy(self, datasets, recursive=False):
+        """Destroy datasets or snapshots
 
         Calls the zfs destroy command, optionally recursively removing
-        snapshots of child filesystems with the same name.
+        snapshots of child filesystems with the same snapshot name.
 
-        Note that the underlying command can only handle a single snapshot at a
-        time.
+        Note that the underlying `zfs destroy` command can only handle a single
+        snapshot at a time.
+        :param datasets: the name of the dataset(s) to remove
+        :type datasets: list or str
+        :param bool recursive: recursively remove snapshots of child
+        filesystems
+        :raises TypeError: if the dataset type is wrong
+        :raises ValueError: if the dataset name is empty or invalid
+        :raises ZfsNoDatasetError: if the dataset does not exist
+        :raises ZfsPermissionError: if we couldn't execute the command
+        :raises ZfsUnknownError: if an unknown ZFS-related error occured
+        running the command
         """
         args = ['destroy']
 
-        if recursive==True:
+        if recursive:
             args.append('-r')
 
-        if dataset is None or dataset == '':
-            raise ZfsArgumentError('dataset cannot be empty')
-        if isinstance(dataset, basestring):
-            args.append(dataset)
-        else:
-            raise ZfsArgumentError(
-                'not sure how to handle dataset with %s' % type(dataset))
+        if datasets == '':
+            raise ValueError('dataset cannot be empty')
+        if isinstance(datasets, basestring):
+            datasets = [datasets]
+        args.extend(datasets)
 
         out,err,rc=self.run_zfs(args)
 
@@ -211,9 +278,7 @@ class ZfsCommandRunner(object):
             _check_perm_err(err)
             if (err == ZFS_ERROR_STRINGS['nosnaplinux']
                 or 'dataset does not exist' in err):
-                raise ZfsNoDatasetError(errno.ENOENT, err, dataset)
-            elif 'permission denied' in err:
-                raise ZfsPermissionError(errno.EPERM, err, dataset)
+                raise ZfsNoDatasetError(errno.ENOENT, err, ','.join(datasets))
             else:
                 raise ZfsUnknownError(err)
 
@@ -221,6 +286,16 @@ class ZfsCommandRunner(object):
 
     def zfs_snapshot(self, dataset, snapname, recursive=False):
         """Snapshot a ZFS filesystem
+
+        :param str dataset: the name of the dataset to snapshot
+        :param str snapname: the name to use for the snapshot
+        :param bool recursive: if true, recursively snapshot child filesystems
+        using the same `snapname`
+        :raises TypeError: if an argument doesn't match it's expected type
+        :raises ZfsDatasetExistsError: if the snapshot already exists
+        :raises ZfsNoDatasetError: if the `dataset` does not exist
+        :raises ZfsPermissionError: if we couldn't run the command
+        :raises ZfsUnknownError: if an undetermined Zfs-related error occurred
         """
         args = ['snapshot']
 
@@ -228,11 +303,11 @@ class ZfsCommandRunner(object):
             args.append('-r')
 
         if not isinstance(dataset, basestring):
-            raise ZfsArgumentError(
-                'not sure how to handle filesys with %s' % type(filesys))
+            raise TypeError(
+                'not sure how to handle filesys with type %s' % type(filesys))
         if not isinstance(snapname, basestring):
-            raise ZfsArgumentError(
-                'not sure how to handle snapname with %s' % type(snapname))
+            raise TypeError(
+                'not sure how to handle snapname with type %s' % type(snapname))
 
         fullsnapname="%s@%s" % (dataset, snapname)
         _validate_snapname(fullsnapname)
@@ -248,11 +323,15 @@ class ZfsCommandRunner(object):
             elif 'permission denied' in err:
                 raise ZfsPermissionError(errno.EPERM, err, dataset)
             else:
-                raise ZfsUknownError(err)
+                raise ZfsUnknownError(err)
         pass
 
     def is_syncing(self, pool):
         """Check if the named pool is currently scrubbing or resilvering
+
+        :param str pool: pool to check
+        :return: true if pool is syncing, false otherwise
+        :rtype: bool
         """
         s = self.zpool_status(pool)
         if " in progress" in s:
@@ -260,12 +339,15 @@ class ZfsCommandRunner(object):
         return False
 
     def zpool_status(self, pools=None):
-        """Call zpool status to check the status of a zpool
+        """Call zpool status to check the status of a pool or pools
 
-        Currently just returns the raw text output of the zpool status command.  It
+        :param pools: name of pool or pools to check
+        :type pools: list, str, or None
+        :return: the raw text output of the zpool status command.  It
         might be worth the time to attempt to parse the big blob of text into the
         various fields in the status statement, and return them as a list of
         ZpoolStatus objects.
+        :rtype: str
         """
         args=[ 'zpool', 'status', '-v' ]
 
@@ -290,10 +372,22 @@ class ZfsCommandRunner(object):
     def process_cmd_args(cmd, args):
         """Process the cmd and args, returning a cmdargs array
 
-        Utility function for implementing a run method in a subclass
+        Utility function for implementing a run method in a subclass. If cmd is
+        also duplicated in args, it's stripped out.
+
+        :param str cmd: The zfs command to run, either zfs or zpool
+        :param list args: Arguments to the zfs command, in list form.
+        :return: the final command and it's arguments, suitable for execution
+        :rtype: list
+        :raises TypeError: if args is not a list
+        :raises TypeError: if cmd is not a string
+        :raises ValueError: if cmd is not one of the expected Zfs commands
         """
         if isinstance(args, basestring):
-            raise TypeError("args must be an array.")
+            raise TypeError("args must be an list.")
+
+        if cmd not in ZFS_CMDS:
+            raise ValueError('cmd must be one of: %s' % ZFS_CMDS)
 
         cmdargs=[cmd]
         if args[0] == cmd:
@@ -302,8 +396,6 @@ class ZfsCommandRunner(object):
             cmdargs.extend(args)
 
         return cmdargs
-
-
 
 class SSHZfsCommandRunner(ZfsCommandRunner):
     """Run ZFS commands on a remote system
@@ -316,7 +408,10 @@ class SSHZfsCommandRunner(ZfsCommandRunner):
         self.ssh = ssh
 
     def run_cmd(self, cmd, args, errorclass):
-        """fire off a new paramiko channel to run a command on a remote system
+        """run a command on a remote system in a new SSH channel
+
+        See :py:func:`ZfsCommandRunner.run_cmd` for a description of the
+        parameters and the return values
         """
         cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
 
@@ -378,6 +473,9 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
 
         instanciates a subprocess object, and raises the specified errorclass if
         the subprocess call raises an OSError with errno of 2 (ENOENT)
+
+        See :py:func:`ZfsCommandRunner.run_cmd` for a description of the
+        parameters and the return values
         """
         cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
         try:
@@ -458,6 +556,9 @@ def _check_perm_err(errstring):
 
     if "Failed to load ZFS module stack." in errstring:
         raise ZfsPermissionError(errno.EPERM, errstring, 'Kernel module zfs.ko')
+
+    if ': permission denied' in errstring:
+        raise ZfsPermissionError(errno.EPERM, errstring)
 
 def _check_prop_err(errstring):
     """Check if the errstring is a zfs invalid property error"""

@@ -35,6 +35,9 @@ tank/snaprecurse/child1	30K	3.56T	30K	/tank/snaprecurse/child1
 tank/snaprecurse/child2	30K	3.56T	30K	/tank/snaprecurse/child2
 '''
     mockedoutnoargstank="tank	3.91G	3.56T	3.91G	/tank\n"
+    mockedoutnoargstanks="""tank	3.91G	3.56T	3.91G	/tank
+tank2	3.91G	3.56T	3.91G	/tank2
+"""
 
     @raises(ZfsPermissionError)
     def test_zpool_list_with_bad_permission(self):
@@ -203,6 +206,10 @@ For more info, run: zfs help list"""
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(properties=['NAME'])
 
+    @raises(TypeError)
+    def test_zfs_list_with_invalid_recursive(self):
+        """test zfs_list with a non-booling value for recursive"""
+        r = util.zfs_list(recursive='garbage')
 
     def test_zfs_list_with_existing_dataset(self):
         """
@@ -217,10 +224,40 @@ For more info, run: zfs help list"""
             [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
-        r = util.zfs_list(dataset='tank')
+
+        r = util.zfs_list(datasets='tank')
         assert r
         line = r.next()
         assert_equal(line[0],'tank')
+        assert_equal(len(line), 5)
+
+        # make sure it works as a list
+        r = util.zfs_list(datasets=['tank'])
+        assert r
+        line = r.next()
+        assert_equal(line[0],'tank')
+        assert_equal(len(line), 5)
+
+    def test_zfs_list_with_existing_datasets(self):
+        """
+        test zfs_list with multiple datasets that exist
+        """
+        fake_p=flexmock(
+            communicate = lambda: (self.mockedoutnoargstanks,
+                                   self.mockederr),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank', 'tank2'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return(fake_p)
+        r = util.zfs_list(datasets=['tank', 'tank2'])
+        assert r
+        line = r.next()
+        assert_equal(line[0],'tank')
+        assert_equal(len(line), 5)
+        line = r.next()
+        assert_equal(line[0],'tank2')
         assert_equal(len(line), 5)
 
     def test_zfs_list_with_existing_dataset_recursive(self):
@@ -236,7 +273,27 @@ For more info, run: zfs help list"""
             [ 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
-        r = util.zfs_list(dataset='tank',recursive=True)
+        r = util.zfs_list(datasets='tank',recursive=True)
+        assert r
+        line = r.next()
+        assert_equal(line[0],'tank')
+        assert_equal(len(line), 5)
+
+    def test_zfs_list_with_existing_dataset_recursive_depth(self):
+        """
+        test zfs_list with a dataset that exists and recurse with depth=1
+        """
+        fake_p=flexmock(
+            communicate = lambda: (self.mockedoutnoargs,
+                                   self.mockederr),
+            returncode  = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            [ 'zfs', 'list', '-H', '-r', '-d', '1', '-t', 'filesystem,volume', 'tank'],
+            env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE).and_return(fake_p)
+
+        r = util.zfs_list(datasets='tank', recursive=True, depth=1)
         assert r
         line = r.next()
         assert_equal(line[0],'tank')
@@ -258,7 +315,7 @@ For more info, run: zfs help list"""
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
-        r = util.zfs_list(dataset='failboat')
+        r = util.zfs_list(datasets='failboat')
 
     @raises(ZfsNoPoolError)
     def test_zpool_status_with_nonexistent_pool(self):
@@ -330,7 +387,6 @@ For more info, run: zfs help list"""
         r = util.zfs_destroy('tank@foo', True)
         assert_equal(r, None)
 
-    @raises(ZfsArgumentError)
     def test_zfs_destroy_one_existing_item_by_list(self):
         """test zfs_destroy with one existing snapshot passed as a list"""
         fake_p=flexmock(
@@ -345,7 +401,6 @@ For more info, run: zfs help list"""
         r = util.zfs_destroy(['tank@foo'])
         assert_equal(r, None)
 
-    @raises(ZfsArgumentError)
     def test_zfs_destroy_multiple_existing_items(self):
         """test zfs_destroy with one existing snapshot passed as a list"""
         fake_p=flexmock(
