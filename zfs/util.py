@@ -203,11 +203,13 @@ class ZfsCommandRunner(object):
 
         if not isinstance(recursive, bool):
             raise TypeError('recursive must be a boolean')
-        if recursive == True:
-            if depth != None:
-                args.append('-d')
-                args.append(str(depth))
-            else:
+
+        # Can't specify -d and -r at the same time, as -d implies -r
+        if depth != None:
+            args.append('-d')
+            args.append(str(depth))
+        else:
+            if recursive == True:
                 args.append('-r')
 
         if types is not None:
