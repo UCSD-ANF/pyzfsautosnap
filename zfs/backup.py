@@ -12,11 +12,14 @@ class Backup(object):
     def take_backup(self, fsnames,snapchildren=False):
         """backup the requested fsnames
 
-        Given a list of fsnames, backup the filesystem
-
         This is a skeleton method that should be overriden by a child class
+        :param fsnames: the filesystem or filesystems to back up
+        :type fsnames: str or list
+        :param bool snapchildren: snapshot the child filesystems
+        :raises NotImplementedError: this method MUST be overridden by sub an
+        implementing subclass
         """
-        pass
+        raise NotImplementedError
 
 class MbufferedSSHBackup(Backup):
     def __init__(self, backup_host, backup_zpool, backup_user, **kwds):
@@ -41,6 +44,9 @@ class MbufferedSSHBackup(Backup):
         This is a continual incremental setup. A full is only taken if the
         receiving system doesn't contain any snapshots that match our
         incremental window
+
+        See :py:method:`Backup.take_backup` for details on the expected
+        parameters.
         """
 
         if isinstance(fsnames, basestring) and fsnames == '//':
