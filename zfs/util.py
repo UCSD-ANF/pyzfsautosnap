@@ -194,6 +194,7 @@ class ZfsCommandRunner(object):
         :rtype: iter
         :raise TypeError: if a parameter is of the wrong type
         :raise ValueError: if a parameter has an unexpected value
+        :raise ZfsNoDatasetError: if the remote dataset doesn't exist
         """
         SORTORDERS={'asc': '-s',
                     'desc': '-S',
