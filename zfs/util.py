@@ -286,6 +286,57 @@ class ZfsCommandRunner(object):
 
         pass
 
+    def zfs_create(self, filesystem, props=None, create_parents=True):
+        """Creates a new ZFS file system.
+
+        The file system is automatically mounted according to the mountpoint
+        property inherited from the parent.
+
+        :param str filesystem: the name of the dataset to create
+
+        :param bool create_parents: Creates all the non-existing parent
+        datasets. Datasets created in this manner are automatically mounted
+        according to the mountpoint  property  inherited from their parent. Any
+        `properties` are ignored. If the target filesystem already exists, the
+        operation completes successfully.
+
+        :param props: key/value dictionary of properties and values. Sets
+        the specified properties as if the command zfs set property=value was
+        invoked at the same time the dataset was created. Any editable ZFS
+        property can also be set at creation time. An error results if the same
+        property is specified multiple times.
+        :value props: dict or None
+
+        :raises ZfsDatasetExistsError: if the dataset already exists and
+        `create_parents` is false
+
+        :raises ZfsNoDatasetError: if the parent dataset to `filesystem` does
+        not exist and `create_parents` is false
+        """
+        args = ['filesys']
+
+        if create_parents:
+            args.append('-p')
+
+        for k,v in props:
+            args.append('-o')
+            args.append(':'.join(k,v))
+
+        args.append(filesys)
+
+        out,err,rc=self.run_zfs(args)
+
+        if rc > 0:
+            if 'dataset already exists' in err:
+                raise ZfsDatasetExistsError(errno.EEXIST, err, fullsnapname)
+            elif 'dataset does not exist' in err:
+                raise ZfsNoDatasetError(errno.ENOENT, err, dataset)
+            elif 'permission denied' in err:
+                raise ZfsPermissionError(errno.EPERM, err, dataset)
+            else:
+                raise ZfsUnknownError(err)
+        pass
+
     def zfs_snapshot(self, dataset, snapname, recursive=False):
         """Snapshot a ZFS filesystem
 
@@ -517,6 +568,13 @@ def zfs_list(*args, **kwargs):
 
     """
     return _LCR.zfs_list(*args, **kwargs)
+
+def zfs_create(*args, **kwargs):
+    """Creates a new ZFS file system.
+
+    See :py:func:`ZfsCommandRunner.zfs_create` for details.
+    """
+    return _LCR.zfs_create(*args, **kwargs)
 
 def zfs_destroy(*args, **kwargs):
     """Destroy a dataset or snapshot
