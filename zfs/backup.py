@@ -1,10 +1,7 @@
 import logging
-import os
-import sys
-import datetime
 import paramiko
 from snapshot import PREFIX, USERPROP_NAME, get_userprop_datasets
-from util import get_pool_from_fsname, get_pool_guid
+from util import get_pool_from_fsname, get_pool_guid, SSHZfsCommandRunner
 
 class Backup(object):
     def __init__(self, label, prefix=PREFIX, userprop_name=USERPROP_NAME ):
@@ -32,6 +29,7 @@ class MbufferedSSHBackup(Backup):
         self.ssh.connect(hostname=self.backup_host,
                          username=self.backup_user,
                          look_for_keys=False)
+        self.runner=SSHZfsCommandRunner(self.ssh)
         print 'self.label is :'
         print self.label
         print '\n'

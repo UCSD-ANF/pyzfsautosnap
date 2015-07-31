@@ -3,6 +3,7 @@ import subprocess
 import re
 import csv
 import errno
+import socket
 from . import *
 from StringIO import StringIO
 
@@ -42,7 +43,7 @@ class ZfsCommandRunner(object):
     system
     """
 
-    def run_cmd(self, cmd, args, errorclass):
+    def run_cmd(self, cmd, args, errorclass=None):
         """Base method to run a command ZFS command.
         This should be overridden by subclasses
 
@@ -50,7 +51,13 @@ class ZfsCommandRunner(object):
         to run a zfs or zpool command, including setting up the environment,
         running sudo, etc
 
-        It should return something that looks like a subprocess.Popen
+        It should return a tuple with three components:
+            * out - the output of the command as a string
+            * err - the stderr of the command as a string
+            * rc  - the result code of the command as a number
+
+        A subclass implementation should use ZfsCommandRunner.process_cmd_args
+        to validate the cmd and args parameters.
         """
         raise NotImplementedError
 
@@ -279,6 +286,90 @@ class ZfsCommandRunner(object):
 
         return out
 
+    @staticmethod
+    def process_cmd_args(cmd,args):
+        """Process the cmd and args, returning a cmdargs array
+
+        Utility function for implementing a run method in a subclass
+        """
+        if isinstance(args, basestring):
+            raise TypeError("args must be an array.")
+
+        cmdargs=[cmd]
+        if args[0] == cmd:
+            cmdargs.extend(args[1:])
+        else:
+            cmdargs.extend(args)
+
+        return cmdargs
+
+
+
+class SSHZfsCommandRunner(ZfsCommandRunner):
+    """Run ZFS commands on a remote system
+
+    Uses paramiko to run a Zfs command on a remote system via SSH
+    """
+
+    RECV_BUF_SZ=4096
+    def __init__(self, ssh):
+        self.ssh = ssh
+
+    def run_cmd(self, cmd, args, errorclass):
+        """fire off a new paramiko channel to run a command on a remote system
+        """
+        cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
+
+        # paramiko doesn't take a list, convert it to a shell compatible string
+        command = subprocess.list2cmdline(cmdargs)
+
+        transport=self.ssh.get_transport()
+        chan=transport.open_session()
+        chan.exec_command(command)
+
+        out=''
+        err=''
+        done={
+            'out' : False,
+            'err' : False,
+        }
+        # Simulate the behavior of subprocess.Popen.communicate
+        # Alternate reads between recv and recv_error until we've got all of
+        # the data.
+        # Note that paramiko channels will return a zero-length string to
+        # indicate that the channel stream has closed
+        while True:
+            if done['out']==False:
+                try:
+                    t_out=chan.recv(self.RECV_BUF_SZ)
+                    if t_out=='':
+                        # done receiving from out
+                        done['out']=True
+                    else:
+                        out += t_out
+                except socket.timeout:
+                    pass
+            if done['err']==False:
+                try:
+                    t_err=chan.recv_stderr(self.RECV_BUF_SZ)
+                    if t_err=='':
+                        # done receiving from err
+                        done['err']=True
+                    else:
+                        err += t_err
+                except socket.timeout:
+                    pass
+            if not False in done.values():
+                # We're done reading from both channels
+                break
+
+        rc=chan.recv_exit_status()
+
+        logging.debug('out: ' + out)
+        logging.debug('err: ' + err)
+        logging.debug('rc:  ' + str(rc))
+        return (out,err,rc)
+
 class LocalZfsCommandRunner(ZfsCommandRunner):
     """Run ZFS commands on the local system"""
 
@@ -288,14 +379,7 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
         instanciates a subprocess object, and raises the specified errorclass if
         the subprocess call raises an OSError with errno of 2 (ENOENT)
         """
-        assert not isinstance(args, basestring)
-
-        cmdargs=[cmd]
-        if args[0] == cmd:
-            cmdargs.extend(args[1:])
-        else:
-            cmdargs.extend(args)
-
+        cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
         try:
             p=subprocess.Popen(
                 cmdargs,
@@ -304,7 +388,7 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
                 stderr=subprocess.PIPE,
             )
         except OSError as e:
-            if e.errno == errno.ENOENT:
+            if errorclass != None and e.errno == errno.ENOENT:
                 raise errorclass()
             else:
                 raise e
