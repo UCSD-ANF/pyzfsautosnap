@@ -51,6 +51,15 @@ class ZfsCommandRunner(object):
     system
     """
 
+    def __init__(self, command_prefix=None):
+        """Initialize a new ZfsCommandRunner
+
+        :param command_prefix: Optional command to prepend to any call to a zfs
+        or zpool command. Useful for injecting calls to `sudo` or `pfexec`
+        :type command_prefix: str, list, or None
+        """
+        self.command_prefix=command_prefix
+
     def run_cmd(self, cmd, args, errorclass=None):
         """Base method to run a command ZFS command.
         This must be overridden by subclasses
@@ -66,6 +75,8 @@ class ZfsCommandRunner(object):
 
         A subclass implementation should use ZfsCommandRunner.process_cmd_args
         to validate the cmd and args parameters.
+
+        The instance property `command_prefix` is useful for setting up a wrapper command with `cmd`
 
         :param str cmd: The zfs command to run
         :param args: Arguments to the zfs command
@@ -423,8 +434,7 @@ class ZfsCommandRunner(object):
 
         return out
 
-    @staticmethod
-    def process_cmd_args(cmd, args):
+    def process_cmd_args(self, cmd, args):
         """Process the cmd and args, returning a cmdargs array
 
         Utility function for implementing a run method in a subclass. If cmd is
@@ -439,10 +449,16 @@ class ZfsCommandRunner(object):
         :raises ValueError: if cmd is not one of the expected Zfs commands
         """
         if isinstance(args, basestring):
-            raise TypeError("args must be an list.")
+            raise TypeError("args must be a list.")
 
         if cmd not in ZFS_CMDS:
             raise ValueError('cmd must be one of: %s' % ZFS_CMDS)
+
+        if self.command_prefix:
+            if isinstance(basestring, self.command_prefix):
+                cmd.append(self.command_prefix)
+            else:
+                cmd.extend(self.command_prefix)
 
         cmdargs=[cmd]
         if args[0] == cmd:
@@ -459,8 +475,15 @@ class SSHZfsCommandRunner(ZfsCommandRunner):
     """
 
     RECV_BUF_SZ=4096
-    def __init__(self, ssh):
-        self.ssh = ssh
+
+    def __init__(self, ssh_client, *args, **kwargs):
+        """Initialize a new SSHZfsCommandRunner
+
+        :param paramiko.SSHClient sshclient: the sshclient instance to use for
+        remote commands
+        """
+        self.ssh = ssh_client
+        super(SSHZfsCommandRunner, self).__init__(*args, **kwargs)
 
     def run_cmd(self, cmd, args, errorclass):
         """run a command on a remote system in a new SSH channel
@@ -468,7 +491,7 @@ class SSHZfsCommandRunner(ZfsCommandRunner):
         See :py:func:`ZfsCommandRunner.run_cmd` for a description of the
         parameters and the return values
         """
-        cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
+        cmdargs = self.process_cmd_args(cmd, args)
 
         # paramiko doesn't take a list, convert it to a shell compatible string
         command = subprocess.list2cmdline(cmdargs)
@@ -532,7 +555,7 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
         See :py:func:`ZfsCommandRunner.run_cmd` for a description of the
         parameters and the return values
         """
-        cmdargs = ZfsCommandRunner.process_cmd_args(cmd, args)
+        cmdargs = self.process_cmd_args(cmd, args)
         try:
             p=subprocess.Popen(
                 cmdargs,
