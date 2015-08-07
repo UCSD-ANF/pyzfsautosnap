@@ -26,9 +26,17 @@ node 'target.test.int' {
     disk   => '/zfsbackups-pool-file',
   } ->
   class { 'zfsautosnap::server' :
-    client_ssh_pubkey      => '/vagrant/files/client_id_dsa.pub',
-    client_ssh_pubkey_type => 'ssh-dss',
+    #client_ssh_pubkey      => '/vagrant/files/client_id_dsa.pub',
+    #client_ssh_pubkey_type => 'ssh-dss',
+  } ->
+  file { "${zfsautosnap::server::target_user_homedir}/.ssh/authorized_keys" :
+    ensure => 'file',
+    source => '/vagrant/files/client_id_dsa.pub',
+    mode   => 0644,
+    owner  => $zfsautosnap::server::target_username,
+    group  => $zfsautosnap::server::target_username,
   }
+
 }
 
 node 'client.test.int' {
