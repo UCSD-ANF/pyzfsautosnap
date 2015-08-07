@@ -17,6 +17,14 @@ ZFS_ERROR_STRINGS={
 ZFS_CMDS=['zpool', 'zfs']
 _FS_COMP='[a-zA-Z0-9\-_.]+'
 
+SUDO_CMD='sudo'
+
+
+"""The zfs.util class contains both a functional and Object oriented interface for the various zfs and zpool subcommands.
+
+All of the functional methods will execute zfs and zpool commands using sudo by default.
+"""
+
 def get_pool_from_fsname(fsname):
     """Return the ZFS pool containing fsname
 
@@ -454,13 +462,14 @@ class ZfsCommandRunner(object):
         if cmd not in ZFS_CMDS:
             raise ValueError('cmd must be one of: %s' % ZFS_CMDS)
 
+        cmdargs=[]
         if self.command_prefix:
-            if isinstance(basestring, self.command_prefix):
-                cmd.append(self.command_prefix)
+            if isinstance(self.command_prefix, basestring):
+                cmdargs.append(self.command_prefix)
             else:
-                cmd.extend(self.command_prefix)
+                cmdargs.extend(self.command_prefix)
 
-        cmdargs=[cmd]
+        cmdargs.append(cmd)
         if args[0] == cmd:
             cmdargs.extend(args[1:])
         else:
@@ -576,10 +585,12 @@ class LocalZfsCommandRunner(ZfsCommandRunner):
         return (out,err,rc)
 
 # The local command runner object, used for the functional methods
-_LCR=LocalZfsCommandRunner()
+_LCR=LocalZfsCommandRunner(command_prefix=SUDO_CMD)
 
 def zpool_list(*args, **kwargs):
     """List the specified properties about Zpools
+
+    Uses the sudo command to run zpool.
 
     See :py:func:`ZfsCommandRunner.zpool_list` for details.
     """
@@ -589,6 +600,8 @@ def zpool_list(*args, **kwargs):
 def zfs_list(*args, **kwargs):
     """List the specified properties about Zfs datasets
 
+    Uses the sudo command to run zfs.
+
     See :py:func:`ZfsCommandRunner.zfs_list` for details.
 
     """
@@ -597,6 +610,8 @@ def zfs_list(*args, **kwargs):
 def zfs_create(*args, **kwargs):
     """Creates a new ZFS file system.
 
+    Uses the sudo command to run zfs.
+
     See :py:func:`ZfsCommandRunner.zfs_create` for details.
     """
     return _LCR.zfs_create(*args, **kwargs)
@@ -604,12 +619,16 @@ def zfs_create(*args, **kwargs):
 def zfs_destroy(*args, **kwargs):
     """Destroy a dataset or snapshot
 
+    Uses the sudo command to run zfs.
+
     See :py:func:`ZfsCommandRunner.zfs_destroy` for details.
     """
     return _LCR.zfs_destroy(*args, **kwargs)
 
 def zfs_snapshot(*args, **kwargs):
     """Snapshot a ZFS filesystem
+
+    Uses the sudo command to run zfs.
 
     See :py:func:`ZfsCommandRunner.zfs_snapshot` for details.
     """
@@ -624,6 +643,8 @@ def is_syncing(*args, **kwargs):
 
 def zpool_status(*args, **kwargs):
     """Call zpool status to check the status of a zpool
+
+    Uses the sudo command to run zpool.
 
     See :py:func:`ZfsCommandRunner.zpool_status` for details.
     """

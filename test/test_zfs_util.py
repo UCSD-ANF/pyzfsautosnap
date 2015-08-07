@@ -62,7 +62,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zpool', 'list', '-H',
+            [ 'sudo', 'zpool', 'list', '-H',
              '-o','name,size'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return( fake_p)
@@ -85,7 +85,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode=0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zpool', 'list', '-H'],
+            [ 'sudo', 'zpool', 'list', '-H'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zpool_list()
@@ -104,7 +104,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zpool', 'list', '-H', 'tank'],
+            [ 'sudo', 'zpool', 'list', '-H', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zpool_list(pools='tank')
@@ -130,7 +130,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'list', '-H', 'failboat'], env=util.ZFS_ENV,
+            ['sudo', 'zpool', 'list', '-H', 'failboat'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -159,7 +159,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume','-s','name',
+            [ 'sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume','-s','name',
              '-o','name,com.sun:auto-snapshot,com.sun:auto-snapshot:daily'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return( fake_p)
@@ -182,7 +182,7 @@ tank2	3.91G	3.56T	3.91G	/tank2
             returncode=0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume'],
+            [ 'sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list()
@@ -201,7 +201,7 @@ For more info, run: zfs help list"""
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'list', '-H', '-t', 'filesystem,volume', '-o', 'NAME'],
+            ['sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume', '-o', 'NAME'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(properties=['NAME'])
@@ -221,7 +221,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
+            [ 'sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
@@ -248,7 +248,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank', 'tank2'],
+            [ 'sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'tank', 'tank2'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(datasets=['tank', 'tank2'])
@@ -270,7 +270,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
+            [ 'sudo', 'zfs', 'list', '-H', '-r', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
         r = util.zfs_list(datasets='tank',recursive=True)
@@ -289,7 +289,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-d', '1', '-t', 'filesystem,volume', 'tank'],
+            [ 'sudo', 'zfs', 'list', '-H', '-d', '1', '-t', 'filesystem,volume', 'tank'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
@@ -311,7 +311,7 @@ For more info, run: zfs help list"""
             returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            [ 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'failboat'],
+            [ 'sudo', 'zfs', 'list', '-H', '-t', 'filesystem,volume', 'failboat'],
             env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE).and_return(fake_p)
 
@@ -328,7 +328,7 @@ For more info, run: zfs help list"""
             returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'failboat'], env=util.ZFS_ENV,
+            ['sudo', 'zpool', 'status', '-v', 'failboat'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -343,7 +343,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'pool1'], env=util.ZFS_ENV,
+            ['sudo', 'zpool', 'status', '-v', 'pool1'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -357,7 +357,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zpool', 'status', '-v', 'pool1', 'pool2'], env=util.ZFS_ENV,
+            ['sudo', 'zpool', 'status', '-v', 'pool1', 'pool2'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -371,7 +371,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -380,7 +380,7 @@ For more info, run: zfs help list"""
 
         # Now, with the recursive flag
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', '-r', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', '-r', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -394,7 +394,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -408,7 +408,7 @@ For more info, run: zfs help list"""
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo', 'tank2@bar', 'cox@home'],
+            ['sudo', 'zfs', 'destroy', 'tank@foo', 'tank2@bar', 'cox@home'],
             env=util.ZFS_ENV, stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -427,7 +427,7 @@ For more info, run: zfs help list"""
             returncode  = 1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -445,7 +445,7 @@ For more info, run: zfs help list"""
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -463,7 +463,7 @@ For more info, run: zfs help list"""
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -481,7 +481,7 @@ For more info, run: zfs help list"""
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'destroy', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -505,7 +505,7 @@ For the delegated permission list, run: zfs allow|unallow
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', 'tank@foo'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'snapshot', 'tank@foo'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -521,7 +521,7 @@ For the delegated permission list, run: zfs allow|unallow
             returncode=1)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', 'tank@exists'], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'snapshot', 'tank@exists'], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -535,7 +535,7 @@ For the delegated permission list, run: zfs allow|unallow
             returncode  = 0)
         mysubprocess=flexmock(subprocess)
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', 'tank@%s' % snapname], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'snapshot', 'tank@%s' % snapname], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 
@@ -544,7 +544,7 @@ For the delegated permission list, run: zfs allow|unallow
 
         # Now, with the recursive flag
         mysubprocess.should_receive('Popen').with_args(
-            ['zfs', 'snapshot', '-r', 'tank@%s' % snapname], env=util.ZFS_ENV,
+            ['sudo', 'zfs', 'snapshot', '-r', 'tank@%s' % snapname], env=util.ZFS_ENV,
             stdout=PIPE, stderr=PIPE
         ).and_return(fake_p)
 

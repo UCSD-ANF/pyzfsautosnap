@@ -1,7 +1,7 @@
 import logging
 import paramiko
 from snapshot import PREFIX, USERPROP_NAME, get_userprop_datasets
-from util import get_pool_from_fsname, get_pool_guid, SSHZfsCommandRunner
+from util import get_pool_from_fsname, get_pool_guid, SSHZfsCommandRunner, SUDO_CMD
 
 class Backup(object):
     def __init__(self, label, prefix=PREFIX, userprop_name=USERPROP_NAME ):
@@ -32,11 +32,7 @@ class MbufferedSSHBackup(Backup):
         self.ssh.connect(hostname=self.backup_host,
                          username=self.backup_user,
                          look_for_keys=False)
-        self.runner=SSHZfsCommandRunner(self.ssh)
-        print 'self.label is :'
-        print self.label
-        print '\n'
-        print 'self.userprop_name is '+self.userprop_name+'\n'
+        self.runner=SSHZfsCommandRunner(self.ssh, command_prefix=SUDO_CMD)
 
     def take_backup(self, filesystems, snapchildren=False):
         """Back up a filesystem using the mbuffered SSH method
@@ -121,10 +117,48 @@ class MbufferedSSHBackup(Backup):
     def send_backup(self, snapshot, remote_backup_path, incremental_source=None):
         """Send a backup to the remote_backup_path on self.backup_host
 
-        :param incremental_source: optional name of the source snapshot to use for an incremental backup
+        ZFS backups are performed using the `zfs send` command, which requires
+        a single snapshot (for full backups), or two snapshots (for incremental
+        snapshots).
+
+        Behavior of this function differs if the optional `incremental_source`
+        parameter is specified. If `incremental_source` is None, a full backup
+        is sent using the value of `snapshot` as the source of the backup.
+        Otherwise, `incremental_source` is assumed to be the older of the pair
+        of snapshots used to generate the incremental backup.
+
+        :param incremental_source: optional name of the source snapshot to use
+        for an incremental backup. If specified, this can either be a bare
+        snapshot name like "@snap" or "filesystem@snap". If the latter format
+        is used, the filesystem must be the same filesystem as the one used in
+        the `snapshot` parameter.
         :type incremental_source: str or None
-        :param snapshot: the source filesystem@snapshot
+        :param str snapshot: the primary source filesystem@snapshot.
         """
+        # First, validate our params
+        if '@' not in snapshot:
+            raise ValueError('The "snapshot" parameter does not contain a ' +
+                             'valid snapshot name ("%s")' % snapshot)
+
+        sfs,ssnap = snapshot.split('@', 2)
+        if sfs == '':
+            raise ValueError('The "snapshot" parameter does not contain a ' +
+                             'valid snapshot name ("%s")' % snapshot)
+
+        if incremental_source:
+            if '@' not in incremental_source:
+                raise ValueError('The "incremental_source" parameter does ' +
+                                 'not contain a valid snapshot name ("%s")' %
+                                 incremental_source)
+            ifs,isnap = incremental_source.split('@', 2)
+            if ifs != '' and ifs != sfs:
+                raise ValueError('The filesystem specified in the ' +
+                                 '"incremental_source" parameter (%s) does ' +
+                                 'not match the filesystem in the "snapshot" ' +
+                                 'parameter (%s)' % (ifs,sfs))
+
+
+        # output a log message
         if incremental_source:
             logging.info(
                 "Sending incremental backup %s %s to %s on remote host %s" % (
@@ -134,4 +168,6 @@ class MbufferedSSHBackup(Backup):
         else:
             logging.info("Sending full backup %s to %s on remote host %s" %
                          (snapshot, remote_backup_path, self.backup_host))
+
+        # TODO: Now actually send the snapshot
         pass
