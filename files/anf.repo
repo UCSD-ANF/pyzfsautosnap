@@ -1,0 +1,5 @@
+[anf]
+name=ANF-$releasever
+baseurl=http://anfadmin.ucsd.edu/linux/CentOS/$releasever/$basearch
+gpgcheck=0
+proxy=_none_

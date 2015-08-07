@@ -3,8 +3,19 @@ Package {
 }
 if $::osfamily == 'RedHat' {
   class {'zfsonlinux': }
+  file { '/etc/yum.repos.d/anf.repo':
+    source => '/vagrant/files/anf.repo',
+  }
 
 }
+
+file { '/export':
+  ensure => 'directory',
+} ->
+file { '/export/home':
+  ensure => 'directory',
+}
+
 node 'target.test.int' {
   exec { 'create poolfile':
     command => '/bin/dd if=/dev/zero of=/zfsbackups-pool-file bs=1024 count=1024k',
@@ -13,6 +24,10 @@ node 'target.test.int' {
   zpool { 'zfsbackups':
     ensure => present,
     disk   => '/zfsbackups-pool-file',
+  } ->
+  class { 'zfsautosnap::server' :
+    client_ssh_pubkey      => '/vagrant/files/client_id_dsa.pub',
+    client_ssh_pubkey_type => 'ssh-dss',
   }
 }
 
@@ -31,6 +46,10 @@ node 'client.test.int' {
   } ->
   zfs { 'clienttest': }
 
+  class { 'zfsautosnap::client':
+    target_hostname           => '192.168.34.3',
+    client_ssh_privkey_source => '/vagrant/files/client_id_dsa',
+  }
 
   # Puppet type doesn't handle spaces correctly
   #zfs { 'clienttest/crap with spaces':
