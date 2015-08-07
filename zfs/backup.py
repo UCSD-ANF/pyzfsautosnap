@@ -1,15 +1,17 @@
 import logging
 import paramiko
-from snapshot import PREFIX, USERPROP_NAME, get_userprop_datasets
-from util import get_pool_from_fsname, get_pool_guid, SSHZfsCommandRunner, SUDO_CMD
+import snapshot
+import util
+import os
 
 class Backup(object):
-    def __init__(self, label, prefix=PREFIX, userprop_name=USERPROP_NAME ):
+    def __init__(self, label, prefix=snapshot.PREFIX,
+                 userprop_name=snapshot.USERPROP_NAME ):
         self.label         = label
         self.prefix        = prefix
         self.userprop_name = userprop_name
 
-    def take_backup(self, fsnames,snapchildren=False):
+    def take_backup(self, fsnames, snap_children=False):
         """backup the requested fsnames
 
         This is a skeleton method that should be overriden by a child class
@@ -22,19 +24,19 @@ class Backup(object):
         raise NotImplementedError
 
 class MbufferedSSHBackup(Backup):
-    def __init__(self, backup_host, backup_zpool, backup_user, **kwds):
-        super(MbufferedSSHBackup, self).__init__(**kwds)
+    def __init__(self, backup_host, backup_dataset, backup_user, *args, **kwargs):
+        super(MbufferedSSHBackup, self).__init__(*args,**kwargs)
         self.backup_host  = backup_host
-        self.backup_zpool = backup_zpool
+        self.backup_dataset = backup_dataset
         self.backup_user  = backup_user
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(hostname=self.backup_host,
                          username=self.backup_user,
-                         look_for_keys=False)
-        self.runner=SSHZfsCommandRunner(self.ssh, command_prefix=SUDO_CMD)
+                         look_for_keys=True)
+        self.runner=util.SSHZfsCommandRunner(self.ssh, command_prefix=util.SUDO_CMD)
 
-    def take_backup(self, filesystems, snapchildren=False):
+    def take_backup(self, filesystems, snap_children=False):
         """Back up a filesystem using the mbuffered SSH method
 
         This is a continual incremental setup. A full is only taken if the
@@ -46,7 +48,7 @@ class MbufferedSSHBackup(Backup):
         """
 
         if isinstance(filesystems, basestring) and filesystems == '//':
-            single_list,recursive_list = get_userprop_datasets(
+            single_list,recursive_list = snapshot.get_userprop_datasets(
                 label = self.label, userprop_name=self.userprop_name)
 
             logging.info("Taking non-recursive backups of: %s" %\
@@ -54,7 +56,7 @@ class MbufferedSSHBackup(Backup):
             single_state = self.take_backup(single_list, snap_children = False)
 
             logging.info("Taking recursive backups of: %s" %\
-                         ', '.join(recurive_list))
+                         ', '.join(recursive_list))
             recursive_state = self.take_backup(
                 recursive_list, snap_children = True)
 
@@ -69,7 +71,7 @@ class MbufferedSSHBackup(Backup):
                 fs))
 
             # Get the current snapshots of the local fs
-            local_snaps=[ s[0] for s in zfs.util.zfs_list(fs,
+            local_snaps=[ s[0] for s in util.zfs_list(fs,
                                                           types=['snapshot'],
                                                           depth=1,
                                                           properties=['name'])
@@ -80,21 +82,22 @@ class MbufferedSSHBackup(Backup):
                 logging.error('The filesystem %s fs does not have any snapshots.')
                 continue
 
-            pool = get_pool_from_fsname(fs)
-            guid = get_pool_guid(pool)
+            pool = util.get_pool_from_fsname(fs)
+            guid = util.get_pool_guid(pool)
 
-            remote_base_path   = os.path.join( self.backup_zpool, guid)
+            remote_base_path   = os.path.join( self.backup_dataset, guid)
             remote_backup_path = os.path.join( remote_base_path, fs )
 
             # check and create remote dataset
-            runner.zfs_create(remote_fs, create_parents=True)
+            self.runner.zfs_create(remote_backup_path, create_parents=True)
 
             # Get the current snapshots of the remote_fs
             remote_snaps=[ s[0].lstrip(remote_base_path) for s in
-                          runner.zfs_list(remote_fs, types=['snapshot'],
+                          self.runner.zfs_list(remote_backup_path, types=['snapshot'],
                                           depth=1) ]
 
             want_remote_snapshot_purge = False
+            incremental_source = None
             if len(remote_snaps) == 0:
                 backup_type = 'full'
             elif len(local_snaps) == 1:
@@ -110,7 +113,7 @@ class MbufferedSSHBackup(Backup):
             newest_local_snap = local_snaps[-1]
 
             # Now we're ready to send the backup to the remote system
-            send_backup(snapshot=newest_local_snap,
+            self.send_backup(snapshot=newest_local_snap,
                         incremental_source=incremental_source,
                         remote_backup_path=remote_backup_path)
 
