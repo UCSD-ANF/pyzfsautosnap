@@ -177,8 +177,8 @@ def destroy_older_snapshots(filesys, keep, label, prefix=PREFIX,
     snappre="%s@%s_%s-" % (filesys, prefix, label)
     try:
         r = zfs_list(types=['snapshot'], sort='creation', properties=['name'],
-                     ds=filesys, recursive=True)
-    except zfs.ZfsNoDatasetError as e:
+                     datasets=filesys, recursive=True)
+    except ZfsNoDatasetError as e:
         logging.warning(e)
         return None
 

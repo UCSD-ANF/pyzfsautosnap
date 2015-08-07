@@ -181,7 +181,7 @@ def test_destroy_older_snapshots():
     myzfssnapshot=flexmock(zfssnapshot)
     myzfssnapshot.should_receive('zfs_list').with_args(
         types=['snapshot'], sort='creation', properties=['name'],
-        ds='tank/foo', recursive=True
+        datasets='tank/foo', recursive=True
     ).and_return(iter(p))
 
     myzfssnapshot.should_receive('zfs_destroy').and_return()
@@ -190,3 +190,12 @@ def test_destroy_older_snapshots():
         filesys='tank/foo', keep=3, label='hourly', recursive=False)
     assert_equal(len(r), 4)
     assert_equal(r,expected_result)
+
+    myzfssnapshot2=flexmock(zfssnapshot)
+    myzfssnapshot2.should_receive('zfs_list').with_args(
+        types=['snapshot'], sort='creation', properties=['name'],
+        datasets='bad/fs', recursive=True
+    ).and_raise(ZfsNoDatasetError)
+    r2=myzfssnapshot2.destroy_older_snapshots(
+        filesys='bad/fs', keep=3, label='hourly', recursive=False)
+    assert_equal(r2, None)
