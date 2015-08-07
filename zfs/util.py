@@ -307,7 +307,7 @@ class ZfsCommandRunner(object):
 
         pass
 
-    def zfs_create(self, filesystem, props=None, create_parents=True):
+    def zfs_create(self, filesystem, props=None, create_parents=False):
         """Creates a new ZFS file system.
 
         The file system is automatically mounted according to the mountpoint
@@ -334,16 +334,17 @@ class ZfsCommandRunner(object):
         :raises ZfsNoDatasetError: if the parent dataset to `filesystem` does
         not exist and `create_parents` is false
         """
-        args = ['filesys']
+        args = ['create']
 
         if create_parents:
             args.append('-p')
 
-        for k,v in props:
-            args.append('-o')
-            args.append(':'.join(k,v))
+        if props:
+            for k,v in props:
+                args.append('-o')
+                args.append(':'.join(k,v))
 
-        args.append(filesys)
+        args.append(filesystem)
 
         out,err,rc=self.run_zfs(args)
 

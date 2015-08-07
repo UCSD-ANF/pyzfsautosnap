@@ -364,6 +364,35 @@ For more info, run: zfs help list"""
         r = util.zpool_status(pools=['pool1','pool2'])
         assert r
 
+    def test_zfs_create(self):
+        """test zfs_create"""
+        fake_p=flexmock(
+            communicate = lambda: ('', ''),
+            returncode = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['sudo', 'zfs', 'create', 'tank/foo'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_create('tank/foo')
+        assert_equal(r, None)
+
+    def test_zfs_create_with_parents(self):
+        """test zfs_create"""
+        fake_p=flexmock(
+            communicate = lambda: ('', ''),
+            returncode = 0)
+        mysubprocess=flexmock(subprocess)
+        mysubprocess.should_receive('Popen').with_args(
+            ['sudo', 'zfs', 'create', '-p', 'tank/foo/bar'], env=util.ZFS_ENV,
+            stdout=PIPE, stderr=PIPE
+        ).and_return(fake_p)
+
+        r = util.zfs_create('tank/foo/bar', create_parents=True)
+        assert_equal(r, None)
+
+
     def test_zfs_destroy_one_existing_item(self):
         """test zfs_destroy with one existing snapshot"""
         fake_p=flexmock(
