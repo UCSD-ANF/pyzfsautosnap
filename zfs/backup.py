@@ -122,9 +122,11 @@ class MbufferedSSHBackup(Backup):
             # Now we're ready to send the backup to the remote system
             self.send_backup(snapshot=newest_local_snap,
                         incremental_source=incremental_source,
-                        remote_backup_path=remote_backup_path)
+                        remote_backup_path=remote_backup_path,
+                            recursive=snap_children)
 
-    def send_backup(self, snapshot, remote_backup_path, incremental_source=None):
+    def send_backup(self, snapshot, remote_backup_path,
+                    incremental_source=None, recursive=False):
         """Send a backup to the remote_backup_path on self.backup_host
 
         ZFS backups are performed using the `zfs send` command, which requires
@@ -171,13 +173,16 @@ class MbufferedSSHBackup(Backup):
         # output a log message
         if incremental_source:
             logging.info(
-                "Sending incremental backup %s %s to %s on remote host %s" % (
+                "Sending incremental backup %s %s to %s on remote host %s (recursive=%s)" % (
                     incremental_source, snapshot, remote_backup_path,
-                    self.backup_host )
+                    self.backup_host, recursive )
             )
         else:
-            logging.info("Sending full backup %s to %s on remote host %s" %
-                         (snapshot, remote_backup_path, self.backup_host))
+            logging.info(
+                "Sending full backup %s to %s on remote host %s (recursive=%s)" %
+                         (snapshot, remote_backup_path, self.backup_host,
+                          recursive)
+            )
 
         # TODO: Now actually send the snapshot
         pass
