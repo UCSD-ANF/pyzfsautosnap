@@ -36,6 +36,13 @@ class MbufferedSSHBackup(Backup):
                          look_for_keys=True)
         self.runner=util.SSHZfsCommandRunner(self.ssh, command_prefix=util.SUDO_CMD)
 
+    def __del__(self):
+        if self.runner:
+            self.runner=None
+        if self.ssh:
+            self.ssh.close()
+            self.ssh=None
+
     def take_backup(self, filesystems, snap_children=False):
         """Back up a filesystem using the mbuffered SSH method
 
